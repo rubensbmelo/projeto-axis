@@ -167,17 +167,14 @@ export default function ReportsPage() {
               </TableHeader>
               <TableBody>
                 {pendencias.length === 0 ? (
-                  <TableRow className="animate-in fade-in-0 duration-150 ease-out">
+                  <TableRow className="animate-in fade-in-0 duration-150 ease-[var(--ease-axis-out)]">
                     <TableCell colSpan={4} className="h-16 text-center text-muted-foreground">
                       Nenhuma pendência.
                     </TableCell>
                   </TableRow>
                 ) : (
                   pendencias.map((r) => (
-                    <TableRow
-                      key={r.id}
-                      className="animate-in fade-in-0 slide-in-from-top-1 duration-200 ease-out"
-                    >
+                    <TableRow key={r.id}>
                       <TableCell>{r.patient?.full_name ?? "—"}</TableCell>
                       <TableCell>{r.procedimento}</TableCell>
                       <TableCell>

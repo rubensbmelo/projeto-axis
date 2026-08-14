@@ -36,7 +36,7 @@ export default function App() {
   if (loading) return <PageLoader />;
   if (!user) {
     return (
-      <div key="login" className="animate-in fade-in-0 duration-200 ease-out">
+      <div key="login" className="animate-in fade-in-0 duration-200 ease-[var(--ease-axis-out)]">
         <LoginPage />
       </div>
     );
@@ -44,7 +44,7 @@ export default function App() {
   if (memberships === null) return <PageLoader />;
   if (memberships.length === 0) {
     return (
-      <div key="onboarding" className="animate-in fade-in-0 duration-200 ease-out">
+      <div key="onboarding" className="animate-in fade-in-0 duration-200 ease-[var(--ease-axis-out)]">
         <OnboardingPage
           onCreated={(orgId) => {
             setOrgId(orgId);
@@ -56,7 +56,7 @@ export default function App() {
   }
 
   return (
-    <div key="app" className="animate-in fade-in-0 duration-200 ease-out">
+    <div key="app" className="animate-in fade-in-0 duration-200 ease-[var(--ease-axis-out)]">
       <AppLayout>
         <Routes>
           <Route path="/" element={<Navigate to="/casos" replace />} />

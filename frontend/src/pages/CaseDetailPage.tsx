@@ -67,6 +67,7 @@ export default function CaseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [docType, setDocType] = useState("outro");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [newDocumentId, setNewDocumentId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
   const load = useCallback(async () => {
@@ -107,6 +108,7 @@ export default function CaseDetailPage() {
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setDocs((prev) => [doc, ...prev]);
+      setNewDocumentId(doc.id);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -228,7 +230,7 @@ export default function CaseDetailPage() {
               </TableHeader>
               <TableBody>
                 {docs.length === 0 ? (
-                  <TableRow className="animate-in fade-in-0 duration-150 ease-out">
+                  <TableRow className="animate-in fade-in-0 duration-150 ease-[var(--ease-axis-out)]">
                     <TableCell colSpan={4} className="h-16 text-center text-muted-foreground">
                       Nenhum documento.
                     </TableCell>
@@ -237,7 +239,11 @@ export default function CaseDetailPage() {
                   docs.map((doc) => (
                     <TableRow
                       key={doc.id}
-                      className="animate-in fade-in-0 slide-in-from-top-1 duration-200 ease-out"
+                      className={
+                        doc.id === newDocumentId
+                          ? "animate-in fade-in-0 slide-in-from-top-1 duration-200 ease-[var(--ease-axis-out)]"
+                          : undefined
+                      }
                     >
                       <TableCell>
                         {doc.document_type ? DOC_TYPE_LABEL[doc.document_type] ?? doc.document_type : "—"}
