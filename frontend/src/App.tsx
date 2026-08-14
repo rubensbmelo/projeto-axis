@@ -34,33 +34,43 @@ export default function App() {
   }, [user]);
 
   if (loading) return <PageLoader />;
-  if (!user) return <LoginPage />;
+  if (!user) {
+    return (
+      <div key="login" className="animate-in fade-in-0 duration-200 ease-out">
+        <LoginPage />
+      </div>
+    );
+  }
   if (memberships === null) return <PageLoader />;
   if (memberships.length === 0) {
     return (
-      <OnboardingPage
-        onCreated={(orgId) => {
-          setOrgId(orgId);
-          setMemberships([{ org_id: orgId, role: "owner", org_member_id: "" }]);
-        }}
-      />
+      <div key="onboarding" className="animate-in fade-in-0 duration-200 ease-out">
+        <OnboardingPage
+          onCreated={(orgId) => {
+            setOrgId(orgId);
+            setMemberships([{ org_id: orgId, role: "owner", org_member_id: "" }]);
+          }}
+        />
+      </div>
     );
   }
 
   return (
-    <AppLayout>
-      <Routes>
-        <Route path="/" element={<Navigate to="/casos" replace />} />
-        <Route path="/casos" element={<CasesPage />} />
-        <Route path="/casos/novo" element={<CaseFormPage />} />
-        <Route path="/casos/:id" element={<CaseDetailPage />} />
-        <Route path="/casos/:id/editar" element={<CaseFormPage />} />
-        <Route path="/pacientes" element={<PatientsPage />} />
-        <Route path="/cadastros" element={<ReferencePage />} />
-        <Route path="/relatorios" element={<ReportsPage />} />
-        <Route path="/membros" element={<MembersPage />} />
-        <Route path="*" element={<Navigate to="/casos" replace />} />
-      </Routes>
-    </AppLayout>
+    <div key="app" className="animate-in fade-in-0 duration-200 ease-out">
+      <AppLayout>
+        <Routes>
+          <Route path="/" element={<Navigate to="/casos" replace />} />
+          <Route path="/casos" element={<CasesPage />} />
+          <Route path="/casos/novo" element={<CaseFormPage />} />
+          <Route path="/casos/:id" element={<CaseDetailPage />} />
+          <Route path="/casos/:id/editar" element={<CaseFormPage />} />
+          <Route path="/pacientes" element={<PatientsPage />} />
+          <Route path="/cadastros" element={<ReferencePage />} />
+          <Route path="/relatorios" element={<ReportsPage />} />
+          <Route path="/membros" element={<MembersPage />} />
+          <Route path="*" element={<Navigate to="/casos" replace />} />
+        </Routes>
+      </AppLayout>
+    </div>
   );
 }

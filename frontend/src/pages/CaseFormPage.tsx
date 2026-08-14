@@ -638,7 +638,7 @@ export default function CaseFormPage() {
             />
 
             {dateWarning && (
-              <div className="flex items-center gap-2 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <div className="flex animate-in items-center gap-2 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-sm text-amber-800 fade-in-0 duration-150 ease-out">
                 <TriangleAlert className="size-4" />
                 {dateWarning}
               </div>

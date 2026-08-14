@@ -228,14 +228,17 @@ export default function CaseDetailPage() {
               </TableHeader>
               <TableBody>
                 {docs.length === 0 ? (
-                  <TableRow>
+                  <TableRow className="animate-in fade-in-0 duration-150 ease-out">
                     <TableCell colSpan={4} className="h-16 text-center text-muted-foreground">
                       Nenhum documento.
                     </TableCell>
                   </TableRow>
                 ) : (
                   docs.map((doc) => (
-                    <TableRow key={doc.id}>
+                    <TableRow
+                      key={doc.id}
+                      className="animate-in fade-in-0 slide-in-from-top-1 duration-200 ease-out"
+                    >
                       <TableCell>
                         {doc.document_type ? DOC_TYPE_LABEL[doc.document_type] ?? doc.document_type : "—"}
                       </TableCell>
