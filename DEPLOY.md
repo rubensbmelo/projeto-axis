@@ -1,5 +1,14 @@
 # Deploy do AXIS na VPS (Docker Compose + Caddy)
 
+> CI: o workflow `.github/workflows/ci.yml` roda em push/PR — typecheck +
+> testes (se as credenciais estiverem nos secrets), build do frontend e
+> validação de Docker/compose. Para **bloquear merge** em caso de falha,
+> ative a branch protection no GitHub: Settings → Branches → Add rule →
+> `master` → marque **Require status checks to pass** e selecione os checks
+> `Backend (tsc + testes)`, `Frontend (build)` e `Docker (imagens + compose
+> config)`. Os secrets usados pelo CI: `SUPABASE_URL`,
+> `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+
 Arquitetura: o **backend** roda num container (porta interna 4000, sem exposição
 ao host) e o **Caddy** serve o frontend (SPA) + proxy reverso de `/api/*` com
 HTTPS automático. Supabase continua na nuvem (banco, auth, RLS, Storage).
