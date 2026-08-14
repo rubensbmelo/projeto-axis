@@ -9,6 +9,9 @@ services:
       dockerfile: backend/Dockerfile
     env_file: .env.production
     restart: unless-stopped
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     networks:
       - app
     healthcheck:
@@ -36,6 +39,9 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     ports:
       - "80:80"
       - "443:443"
