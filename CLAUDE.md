@@ -155,7 +155,14 @@ perder o fio de qual ferramenta corrigiu o quê.
       insert/update-por-campo/delete na MESMA transação; `case_ref` (sem FK)
       preserva o id do caso apagado + snapshot de procedimento/patient_name;
       insert direto no `audit_log` revogado (só o trigger grava). O Express
-      não escreve mais auditoria (`logAudit` removido).
+      **não** faz mais inserts manuais (`logAudit` removido) — sem duplicação.
+      `006_audit_cascade_fix.sql`: `set search_path` na função (segurança
+      SECURITY DEFINER) e a exclusão em cascata da org não quebra mais (audita
+      só a exclusão individual de caso).
+- [x] Normalização de procedimentos (`005_procedures.sql`): `procedimento`
+      (texto livre) virou `procedure_id` → tabela de referência `procedures`
+      por org. Ranking de procedimento agrupa por nome normalizado; há aba
+      "Procedimentos" em Cadastros e o form de caso usa Combobox.
 - [x] Magic bytes no upload (`documents.ts`) além de MIME/extensão.
 - [x] Hardening dos containers: backend roda como usuário `node`
       (não-root), `cap_drop: ALL` + `no-new-privileges` no compose.
