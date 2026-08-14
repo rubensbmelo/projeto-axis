@@ -22,13 +22,8 @@ function pickEditableFields(body: any) {
   return out;
 }
 
-// Grava no audit_log e loga no console se falhar, em vez de falhar
-// silenciosamente (já aconteceu antes: RLS bloqueava o insert e ninguém via).
-async function logAudit(supabase: any, rows: Record<string, any> | Record<string, any>[]) {
-  const { error } = await supabase.from('audit_log').insert(rows);
-  if (error) console.error('audit_log insert failed:', error);
-}
-
+// A auditoria é gravada pelo TRIGGER no banco (migration 004), na MESMA
+// transação da alteração — não precisa mais do insert explícito aqui.
 // Impede que um caso referencie paciente/médico/hospital/convênio/fornecedor
 // de OUTRA organização (RLS não pega isso: foreign keys no Postgres não
 // respeitam RLS ao validar a existência da linha referenciada).
@@ -138,10 +133,6 @@ router.post('/', requireRole('owner', 'doctor', 'secretary') as any, async (req,
     .single();
   if (error) return res.status(400).json({ error });
 
-  await logAudit(r.supabase, {
-    org_id: r.orgId, case_id: data.id, user_id: r.user.id, action: 'insert',
-  });
-
   res.status(201).json(data);
 });
 
@@ -177,23 +168,6 @@ router.put('/:id', requireRole('owner', 'doctor', 'secretary') as any, async (re
     .single();
   if (error) return res.status(400).json({ error });
 
-  const updateRecord = update as unknown as Record<string, any>;
-  const changedFields = Object.keys(update).filter((key) => String(before[key]) !== String(updateRecord[key]));
-  if (changedFields.length > 0) {
-    await logAudit(
-      r.supabase,
-      changedFields.map((field) => ({
-        org_id: r.orgId,
-        case_id: req.params.id,
-        user_id: r.user.id,
-        action: 'update',
-        field_changed: field,
-        old_value: before[field] !== null && before[field] !== undefined ? String(before[field]) : null,
-        new_value: updateRecord[field] !== null && updateRecord[field] !== undefined ? String(updateRecord[field]) : null,
-      }))
-    );
-  }
-
   res.json(after);
 });
 
@@ -202,10 +176,6 @@ router.delete('/:id', requireRole('owner', 'doctor') as any, async (req, res) =>
   const r = req as unknown as AuthedRequest;
   const { error } = await r.supabase.from('surgery_cases').delete().eq('id', req.params.id).eq('org_id', r.orgId);
   if (error) return res.status(400).json({ error });
-
-  await logAudit(r.supabase, {
-    org_id: r.orgId, case_id: req.params.id, user_id: r.user.id, action: 'delete',
-  });
 
   res.json({ deleted: true });
 });

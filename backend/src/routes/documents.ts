@@ -31,7 +31,34 @@ function validateFileType(file: Express.Multer.File): string | null {
   if (!allowedExts || !allowedExts.includes(`.${ext}`)) {
     return 'Tipo de arquivo não permitido. Use PDF, imagem (jpg/png/webp), Word (doc/docx) ou Excel (xls/xlsx).';
   }
+  // Magic bytes: confere o conteúdo real, não só o que o cliente declarou.
+  const b = file.buffer;
+  const match = {
+    'application/pdf': () => b.length >= 5 && b.subarray(0, 5).toString('latin1') === '%PDF-',
+    'image/jpeg': () => b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
+    'image/png': () => b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47,
+    'image/webp': () =>
+      b.length >= 12 &&
+      b.subarray(0, 4).toString('latin1') === 'RIFF' &&
+      b.subarray(8, 12).toString('latin1') === 'WEBP',
+    'application/msword': () => isOle(b),
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': () => isZip(b),
+    'application/vnd.ms-excel': () => isOle(b),
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': () => isZip(b),
+  } as Record<string, () => boolean>;
+  const checker = match[file.mimetype];
+  if (checker && !checker()) {
+    return 'Conteúdo do arquivo não corresponde ao tipo declarado.';
+  }
   return null;
+}
+
+function isZip(b: Buffer): boolean {
+  return b.length >= 4 && b[0] === 0x50 && b[1] === 0x4b && (b[2] === 0x03 || b[2] === 0x05 || b[2] === 0x07);
+}
+
+function isOle(b: Buffer): boolean {
+  return b.length >= 8 && b[0] === 0xd0 && b[1] === 0xcf && b[2] === 0x11 && b[3] === 0xe0;
 }
 
 // Confere que o caso existe e pertence à organização antes de subir arquivo
