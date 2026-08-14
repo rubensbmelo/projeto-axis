@@ -163,6 +163,9 @@ perder o fio de qual ferramenta corrigiu o quê.
       (texto livre) virou `procedure_id` → tabela de referência `procedures`
       por org. Ranking de procedimento agrupa por nome normalizado; há aba
       "Procedimentos" em Cadastros e o form de caso usa Combobox.
+      **Lição:** depois dessa migração, toda query que referenciar procedimento
+      precisa ser conferida; em `surgery_cases`, usar o relacionamento
+      `procedure:procedures(name)` em vez da coluna antiga `procedimento`.
 - [x] Magic bytes no upload (`documents.ts`) além de MIME/extensão.
 - [x] Hardening dos containers: backend roda como usuário `node`
       (não-root), `cap_drop: ALL` + `no-new-privileges` no compose.

@@ -136,7 +136,7 @@ router.get('/pendencias-financeiras', async (req, res) => {
 
   const { data, error } = await r.supabase
     .from('surgery_cases')
-    .select('id, procedimento, valor_cobranca, entrada_cobranca, data_pagamento, data_recebimento, patient:patients(full_name), insurer:insurers(name)')
+    .select('id, procedure:procedures(name), valor_cobranca, entrada_cobranca, data_pagamento, data_recebimento, patient:patients(full_name), insurer:insurers(name)')
     .eq('org_id', r.orgId)
     .not('entrada_cobranca', 'is', null)
     .is('data_recebimento', null);
