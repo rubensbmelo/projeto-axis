@@ -9,6 +9,11 @@
 		reverse_proxy backend:4000
 	}
 
+	# Health check público para uptime monitoring.
+	handle /health {
+		reverse_proxy backend:4000
+	}
+
 	# Frontend (SPA com fallback para /index.html)
 	handle {
 		try_files {path} /index.html

@@ -65,7 +65,7 @@ acesso a `https://axis.seudominio.com`.
 ## 4. Verificação
 
 - `https://<dominio>/` → tela de login
-- `https://<dominio>/health` → `{"ok":true}` (via proxy /api)
+- `https://<dominio>/health` → `{"ok":true}` (via proxy para o backend)
 - Logs: `docker compose logs -f`
 
 ## 5. Atualização (deploy novo)
