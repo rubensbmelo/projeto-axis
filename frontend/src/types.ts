@@ -106,10 +106,13 @@ export interface ReportSummary {
   total_casos: number;
   cirurgias_realizadas: number;
   valor_total_faturado: number;
+  valor_total_recebido: number;
   cirurgias_por_mes: { month: string; count: number }[];
   por_hospital: { label: string; count: number }[];
   por_convenio: { label: string; count: number }[];
   por_procedimento: { label: string; count: number }[];
+  recebimentos_por_mes: { month: string; count: number; total: number }[];
+  comissao_por_medico: { label: string; total: number }[];
 }
 
 export interface AuditEntry {

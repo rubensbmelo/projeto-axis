@@ -99,7 +99,7 @@ export default function ReportsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Total de casos cadastrados</CardTitle>
@@ -133,6 +133,19 @@ export default function ReportsPage() {
             </p>
           </CardContent>
         </Card>
+        <Card className="border-emerald-300/70">
+          <CardHeader>
+            <CardTitle className="text-sm">Total recebido</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="font-heading text-3xl font-semibold">
+              R$ {summary.valor_total_recebido.toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -144,6 +157,82 @@ export default function ReportsPage() {
           <CountTable title="Ranking por hospital" data={summary.por_hospital} />
           <CountTable title="Ranking por procedimento" data={summary.por_procedimento} />
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Recebimentos por mês</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mês</TableHead>
+                    <TableHead className="text-right">Qtde</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {summary.recebimentos_por_mes.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="h-12 text-center text-muted-foreground">
+                        Nenhum recebimento registrado.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    summary.recebimentos_por_mes.map((m) => (
+                      <TableRow key={m.month}>
+                        <TableCell>{m.month}</TableCell>
+                        <TableCell className="text-right">{m.count}</TableCell>
+                        <TableCell className="text-right">
+                          R$ {m.total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Comissão por médico</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Médico</TableHead>
+                    <TableHead className="text-right">Comissão</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {summary.comissao_por_medico.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={2} className="h-12 text-center text-muted-foreground">
+                        Nenhuma comissão registrada.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    summary.comissao_por_medico.map((m) => (
+                      <TableRow key={m.label}>
+                        <TableCell>{m.label}</TableCell>
+                        <TableCell className="text-right">
+                          R$ {m.total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="border-amber-300/70">

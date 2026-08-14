@@ -6,6 +6,9 @@
 **/.env.local
 **/.env.production
 
+# Dados sensíveis / planilha real de pacientes (LGPD)
+Planilha*.xlsx
+
 # Artefatos
 node_modules
 dist
