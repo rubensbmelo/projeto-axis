@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Activity } from "lucide-react";
 import { toast } from "sonner";
 
 import { api } from "@/api/client";
@@ -47,8 +48,11 @@ export default function OnboardingPage({
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Boas-vindas ao AXIS</CardTitle>
+        <CardHeader className="items-center text-center">
+          <div className="mb-2 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <Activity className="size-6" />
+          </div>
+          <CardTitle className="text-xl">Boas-vindas ao AXIS</CardTitle>
           <CardDescription>
             Crie sua clínica para começar a registrar casos cirúrgicos.
           </CardDescription>

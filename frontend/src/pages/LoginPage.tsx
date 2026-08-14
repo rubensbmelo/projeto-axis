@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Activity } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/api/supabase";
@@ -45,9 +46,15 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>AXIS</CardTitle>
-          <CardDescription>Controle de cirurgias / OPME</CardDescription>
+        <CardHeader className="items-center text-center">
+          <div className="mb-2 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <Activity className="size-6" />
+          </div>
+          <CardTitle className="text-xl">AXIS</CardTitle>
+          <CardDescription className="max-w-64">
+            Controle de cirurgias e OPME para a sua clínica — do convênio ao
+            recebimento.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="grid gap-4">

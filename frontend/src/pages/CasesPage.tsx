@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { api } from "@/api/client";
 import type { CaseRow } from "@/types";
+import { STATUS_BADGE, STATUS_OPTIONS, statusLabel } from "@/lib/status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,27 +31,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 
-const STATUS_OPTIONS = [
-  "solicitado",
-  "autorizado",
-  "agendado",
-  "realizado",
-  "faturado",
-  "pago",
-  "cancelado",
-];
-
-const STATUS_BADGE: Record<string, string> = {
-  solicitado: "outline",
-  autorizado: "secondary",
-  agendado: "secondary",
-  realizado: "default",
-  faturado: "outline",
-  pago: "default",
-  cancelado: "destructive",
-};
+function LoadingRows({ cols }: { cols: number }) {
+  return (
+    <>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <TableRow key={i}>
+          {Array.from({ length: cols }).map((__, j) => (
+            <TableCell key={j}>
+              <Skeleton className="h-4 w-full" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
+  );
+}
 
 export default function CasesPage() {
   const navigate = useNavigate();
@@ -58,15 +56,22 @@ export default function CasesPage() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | undefined>();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [toDelete, setToDelete] = useState<CaseRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Debounce curto (~250ms) pra não disparar request a cada tecla.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 250);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (status && status !== "all") params.set("status", status);
-      if (search) params.set("search", search);
+      if (debouncedSearch) params.set("search", debouncedSearch);
       const qs = params.toString();
       const data = await api.get<CaseRow[]>(`/cases${qs ? "?" + qs : ""}`);
       setRows(data);
@@ -75,7 +80,7 @@ export default function CasesPage() {
     } finally {
       setLoading(false);
     }
-  }, [status, search]);
+  }, [status, debouncedSearch]);
 
   useEffect(() => {
     load();
@@ -109,7 +114,7 @@ export default function CasesPage() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2">
-          <div className="relative w-72">
+          <div className="relative w-72 max-w-full">
             <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar por paciente ou procedimento"
@@ -126,7 +131,7 @@ export default function CasesPage() {
               <SelectItem value="all">Todos</SelectItem>
               {STATUS_OPTIONS.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {s}
+                  {statusLabel(s)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -147,11 +152,7 @@ export default function CasesPage() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                    Carregando...
-                  </TableCell>
-                </TableRow>
+                <LoadingRows cols={6} />
               ) : rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
@@ -159,43 +160,57 @@ export default function CasesPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{row.procedimento}</TableCell>
-                    <TableCell>{row.patient?.full_name ?? "—"}</TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_BADGE[row.status] as never}>{row.status}</Badge>
-                    </TableCell>
-                    <TableCell>{row.data_cirurgia ?? "—"}</TableCell>
-                    <TableCell>{row.data_solicitacao ?? "—"}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/casos/${row.id}`)}
+                rows.map((row) => {
+                  const badge = STATUS_BADGE[row.status] ?? { variant: "outline" };
+                  return (
+                    <TableRow key={row.id}>
+                      <TableCell>{row.procedimento}</TableCell>
+                      <TableCell>{row.patient?.full_name ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={badge.variant as never}
+                          className={badge.className}
                         >
-                          <Eye className="size-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/casos/${row.id}/editar`)}
-                        >
-                          <Pencil className="size-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => setToDelete(row)}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                          {statusLabel(row.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{row.data_cirurgia ?? "—"}</TableCell>
+                      <TableCell>{row.data_solicitacao ?? "—"}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label={`Ver caso de ${row.patient?.full_name ?? "paciente"}`}
+                            title="Ver detalhes"
+                            onClick={() => navigate(`/casos/${row.id}`)}
+                          >
+                            <Eye className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label={`Editar caso de ${row.patient?.full_name ?? "paciente"}`}
+                            title="Editar"
+                            onClick={() => navigate(`/casos/${row.id}/editar`)}
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            aria-label={`Excluir caso de ${row.patient?.full_name ?? "paciente"}`}
+                            title="Excluir"
+                            onClick={() => setToDelete(row)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

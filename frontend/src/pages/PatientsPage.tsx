@@ -42,6 +42,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+
+function LoadingRows({ cols }: { cols: number }) {
+  return (
+    <>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <TableRow key={i}>
+          {Array.from({ length: cols }).map((__, j) => (
+            <TableCell key={j}>
+              <Skeleton className="h-4 w-full" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
+  );
+}
 
 const patientSchema = z.object({
   full_name: z.string().min(1, "Nome é obrigatório"),
@@ -183,11 +200,7 @@ export default function PatientsPage() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                    Carregando...
-                  </TableCell>
-                </TableRow>
+                <LoadingRows cols={5} />
               ) : rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
@@ -203,13 +216,21 @@ export default function PatientsPage() {
                     <TableCell>{p.phone ?? "—"}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(p)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Editar paciente ${p.full_name}`}
+                          title="Editar"
+                          onClick={() => openEdit(p)}
+                        >
                           <Pencil className="size-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:text-destructive"
+                          aria-label={`Excluir paciente ${p.full_name}`}
+                          title="Excluir"
                           onClick={() => setToDelete(p)}
                         >
                           <Trash2 className="size-4" />

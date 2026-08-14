@@ -92,6 +92,13 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h2 className="font-heading text-xl font-semibold">Relatórios</h2>
+        <p className="text-sm text-muted-foreground">
+          Visão geral dos casos da sua clínica.
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader>
@@ -139,9 +146,13 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <Card>
+      <Card className="border-amber-300/70">
         <CardHeader>
-          <CardTitle>Pendências financeiras (faturado sem recebimento)</CardTitle>
+          <CardTitle>Pendências financeiras — faturado sem recebimento</CardTitle>
+          <p className="text-sm text-amber-700">
+            Casos já faturados cuja cobrança ainda não foi recebida. Este é o
+            principal gargalo que o AXIS resolve.
+          </p>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg border">

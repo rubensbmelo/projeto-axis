@@ -26,6 +26,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+
+function LoadingRows({ cols }: { cols: number }) {
+  return (
+    <>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <TableRow key={i}>
+          {Array.from({ length: cols }).map((__, j) => (
+            <TableCell key={j}>
+              <Skeleton className="h-4 w-full" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
+  );
+}
 
 const TABS = [
   { value: "hospitals", label: "Hospitais", endpoint: "/hospitals" },
@@ -124,11 +141,7 @@ function ReferenceTable({ endpoint }: { endpoint: string }) {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={2} className="h-16 text-center text-muted-foreground">
-                  Carregando...
-                </TableCell>
-              </TableRow>
+              <LoadingRows cols={2} />
             ) : rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={2} className="h-16 text-center text-muted-foreground">
@@ -141,13 +154,21 @@ function ReferenceTable({ endpoint }: { endpoint: string }) {
                   <TableCell>{r.name}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`Editar ${r.name}`}
+                        title="Editar"
+                        onClick={() => openEdit(r)}
+                      >
                         <Pencil className="size-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         className="text-destructive hover:text-destructive"
+                        aria-label={`Excluir ${r.name}`}
+                        title="Excluir"
                         onClick={() => setToDelete(r)}
                       >
                         <Trash2 className="size-4" />

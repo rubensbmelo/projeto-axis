@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { api, uploadDocument } from "@/api/client";
 import type { AuditEntry, CaseDocument, CaseRow, OrgMember } from "@/types";
+import { statusLabel } from "@/lib/status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -154,7 +155,7 @@ export default function CaseDetailPage() {
               label="Status"
               value={
                 <Badge variant={row.status === "cancelado" ? "destructive" : "default"}>
-                  {row.status}
+                  {statusLabel(row.status)}
                 </Badge>
               }
             />
@@ -244,6 +245,8 @@ export default function CaseDetailPage() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          aria-label={`Baixar ${doc.file_name}`}
+                          title="Baixar"
                           onClick={() => openSignedUrl(doc.id)}
                         >
                           <Download className="size-4" />

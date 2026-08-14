@@ -40,18 +40,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Combobox } from "@/components/combobox";
+import { Separator } from "@/components/ui/separator";
 import { PageLoader } from "@/components/spinner";
-
-const STATUS_FLOW = [
-  "solicitado",
-  "autorizado",
-  "agendado",
-  "realizado",
-  "faturado",
-  "pago",
-];
-
-const STATUS_OPTIONS = [...STATUS_FLOW, "cancelado"];
+import { STATUS_FLOW, STATUS_OPTIONS, statusLabel } from "@/lib/status";
+import { fieldLabel } from "@/lib/labels";
 
 const DATE_FIELDS: (keyof CaseFormValues)[] = [
   "data_solicitacao",
@@ -68,6 +60,20 @@ const MONEY_FIELDS: (keyof CaseFormValues)[] = [
   "valor_cirurgia",
   "comissao_medico",
   "receita_adicional",
+];
+
+// Subdivisões de data para agrupar o formulário em blocos com hierarquia.
+const SCHEDULE_DATES: (keyof CaseFormValues)[] = [
+  "data_solicitacao",
+  "data_autorizacao",
+  "data_agendamento",
+  "data_cirurgia",
+];
+
+const FINANCE_DATES: (keyof CaseFormValues)[] = [
+  "entrada_cobranca",
+  "data_pagamento",
+  "data_recebimento",
 ];
 
 interface CaseFormValues {
@@ -168,8 +174,8 @@ function makeCaseSchema(currentStatus?: string) {
 
   return base.superRefine((values, ctx) => {
     if (values.status === "cancelado") return;
-    const currentIndex = STATUS_FLOW.indexOf(currentStatus);
-    const nextIndex = STATUS_FLOW.indexOf(values.status);
+    const currentIndex = STATUS_FLOW.indexOf(currentStatus as (typeof STATUS_FLOW)[number]);
+    const nextIndex = STATUS_FLOW.indexOf(values.status as (typeof STATUS_FLOW)[number]);
     if (currentIndex !== -1 && nextIndex !== -1 && nextIndex < currentIndex) {
       ctx.addIssue({
         code: "custom",
@@ -333,6 +339,12 @@ export default function CaseFormPage() {
             <CardTitle>{editing ? "Editar caso" : "Novo caso"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div>
+              <h3 className="text-sm font-semibold">Identificação</h3>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Paciente, médico e dados do procedimento.
+              </p>
+            </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <FormField
                 control={form.control}
@@ -386,7 +398,7 @@ export default function CaseFormPage() {
                         <SelectContent>
                           {STATUS_OPTIONS.map((s) => (
                             <SelectItem key={s} value={s}>
-                              {s}
+                              {statusLabel(s)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -530,15 +542,22 @@ export default function CaseFormPage() {
               />
             </div>
 
+            <Separator className="my-2" />
+            <div>
+              <h3 className="text-sm font-semibold">Agendamento</h3>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Datas do fluxo da cirurgia.
+              </p>
+            </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {DATE_FIELDS.map((name) => (
+              {SCHEDULE_DATES.map((name) => (
                 <FormField
                   key={name}
                   control={form.control}
                   name={name}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="capitalize">{name.replace(/_/g, " ")}</FormLabel>
+                      <FormLabel>{fieldLabel(name)}</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} value={field.value as string} />
                       </FormControl>
@@ -549,6 +568,13 @@ export default function CaseFormPage() {
               ))}
             </div>
 
+            <Separator className="my-2" />
+            <div>
+              <h3 className="text-sm font-semibold">Financeiro</h3>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Valores, comissão e recebimentos.
+              </p>
+            </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {MONEY_FIELDS.map((name) => (
                 <FormField
@@ -557,9 +583,7 @@ export default function CaseFormPage() {
                   name={name}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="capitalize">
-                        {name.replace(/_/g, " ")} (R$)
-                      </FormLabel>
+                      <FormLabel>{fieldLabel(name)} (R$)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -574,8 +598,31 @@ export default function CaseFormPage() {
                   )}
                 />
               ))}
+              {FINANCE_DATES.map((name) => (
+                <FormField
+                  key={name}
+                  control={form.control}
+                  name={name}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{fieldLabel(name)}</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} value={field.value as string} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
             </div>
 
+            <Separator className="my-2" />
+            <div>
+              <h3 className="text-sm font-semibold">Observações</h3>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Anotações livres sobre o caso.
+              </p>
+            </div>
             <FormField
               control={form.control}
               name="observacoes"
