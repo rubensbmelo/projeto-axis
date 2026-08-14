@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { AuthedRequest, requireRole } from '../middleware/auth';
+import { patientSchema, patientUpdateSchema, parseOrError } from '../lib/validation';
 
 const canWrite = requireRole('owner', 'doctor', 'secretary') as any;
 const router = Router();
@@ -30,9 +31,12 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', canWrite, async (req, res) => {
   const r = req as unknown as AuthedRequest;
-  const { full_name, cpf, birth_date, phone, address } = req.body || {};
-  if (!full_name) return res.status(400).json({ error: 'Nome do paciente é obrigatório' });
+  const body = req.body || {};
 
+  const parsed = parseOrError(patientSchema, body);
+  if (!parsed.ok) return res.status(400).json({ error: parsed.error });
+
+  const { full_name, cpf, birth_date, phone, address } = parsed.value;
   const { data, error } = await r.supabase
     .from('patients')
     .insert({ org_id: r.orgId, full_name, cpf: cpf || null, birth_date: birth_date || null, phone: phone || null, address: address || null })
@@ -44,8 +48,12 @@ router.post('/', canWrite, async (req, res) => {
 
 router.put('/:id', canWrite, async (req, res) => {
   const r = req as unknown as AuthedRequest;
-  const { full_name, cpf, birth_date, phone, address } = req.body || {};
+  const body = req.body || {};
 
+  const parsed = parseOrError(patientUpdateSchema, body);
+  if (!parsed.ok) return res.status(400).json({ error: parsed.error });
+
+  const { full_name, cpf, birth_date, phone, address } = parsed.value;
   const { data, error } = await r.supabase
     .from('patients')
     .update({ full_name, cpf, birth_date, phone, address })

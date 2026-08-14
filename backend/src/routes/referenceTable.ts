@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { AuthedRequest, requireRole } from '../middleware/auth';
+import { parseOrError, referenceSchema } from '../lib/validation';
 
 const canWrite = requireRole('owner', 'doctor', 'secretary') as any;
 
@@ -22,8 +23,9 @@ export function referenceTableRouter(tableName: string) {
 
   router.post('/', canWrite, async (req, res) => {
     const r = req as unknown as AuthedRequest;
-    const { name } = req.body || {};
-    if (!name) return res.status(400).json({ error: 'Campo "name" é obrigatório' });
+    const parsed = parseOrError(referenceSchema, req.body || {});
+    if (!parsed.ok) return res.status(400).json({ error: parsed.error });
+    const { name } = parsed.value;
 
     const { data, error } = await r.supabase
       .from(tableName)
@@ -36,7 +38,10 @@ export function referenceTableRouter(tableName: string) {
 
   router.put('/:id', canWrite, async (req, res) => {
     const r = req as unknown as AuthedRequest;
-    const { name } = req.body || {};
+    const parsed = parseOrError(referenceSchema, req.body || {});
+    if (!parsed.ok) return res.status(400).json({ error: parsed.error });
+    const { name } = parsed.value;
+
     const { data, error } = await r.supabase
       .from(tableName)
       .update({ name })

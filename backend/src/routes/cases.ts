@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { AuthedRequest, requireRole } from '../middleware/auth';
+import { caseCreateSchema, caseUpdateSchema, parseOrError, statusTransitionError } from '../lib/validation';
 
 const router = Router();
 
@@ -15,7 +16,8 @@ const EDITABLE_FIELDS = [
 function pickEditableFields(body: any) {
   const out: Record<string, any> = {};
   for (const key of EDITABLE_FIELDS) {
-    if (body[key] !== undefined) out[key] = body[key];
+    // Ignora undefined E string vazia (campo opcional "não enviado")
+    if (body[key] !== undefined && body[key] !== '') out[key] = body[key];
   }
   return out;
 }
@@ -122,16 +124,16 @@ router.get('/:id/audit', async (req, res) => {
 router.post('/', requireRole('owner', 'doctor', 'secretary') as any, async (req, res) => {
   const r = req as unknown as AuthedRequest;
   const payload = pickEditableFields(req.body || {});
-  if (!payload.patient_id) return res.status(400).json({ error: 'patient_id é obrigatório' });
-  if (!payload.doctor_id) return res.status(400).json({ error: 'doctor_id é obrigatório' });
-  if (!payload.procedimento) return res.status(400).json({ error: 'procedimento é obrigatório' });
 
-  const refError = await validateOrgReferences(r.supabase, r.orgId, payload);
+  const parsed = parseOrError(caseCreateSchema, payload);
+  if (!parsed.ok) return res.status(400).json({ error: parsed.error });
+
+  const refError = await validateOrgReferences(r.supabase, r.orgId, parsed.value);
   if (refError) return res.status(400).json({ error: refError });
 
   const { data, error } = await r.supabase
     .from('surgery_cases')
-    .insert({ ...payload, org_id: r.orgId, created_by: r.orgMemberId })
+    .insert({ ...parsed.value, org_id: r.orgId, created_by: r.orgMemberId })
     .select(CASE_SELECT)
     .single();
   if (error) return res.status(400).json({ error });
@@ -148,7 +150,11 @@ router.put('/:id', requireRole('owner', 'doctor', 'secretary') as any, async (re
   const r = req as unknown as AuthedRequest;
   const payload = pickEditableFields(req.body || {});
 
-  const refError = await validateOrgReferences(r.supabase, r.orgId, payload);
+  const parsed = parseOrError(caseUpdateSchema, payload);
+  if (!parsed.ok) return res.status(400).json({ error: parsed.error });
+  const update = parsed.value;
+
+  const refError = await validateOrgReferences(r.supabase, r.orgId, update);
   if (refError) return res.status(400).json({ error: refError });
 
   const { data: before, error: beforeError } = await r.supabase
@@ -159,16 +165,20 @@ router.put('/:id', requireRole('owner', 'doctor', 'secretary') as any, async (re
     .single();
   if (beforeError) return res.status(404).json({ error: beforeError });
 
+  const transitionError = statusTransitionError(before.status, update.status);
+  if (transitionError) return res.status(400).json({ error: transitionError });
+
   const { data: after, error } = await r.supabase
     .from('surgery_cases')
-    .update(payload)
+    .update(update)
     .eq('id', req.params.id)
     .eq('org_id', r.orgId)
     .select(CASE_SELECT)
     .single();
   if (error) return res.status(400).json({ error });
 
-  const changedFields = Object.keys(payload).filter((key) => String(before[key]) !== String(payload[key]));
+  const updateRecord = update as unknown as Record<string, any>;
+  const changedFields = Object.keys(update).filter((key) => String(before[key]) !== String(updateRecord[key]));
   if (changedFields.length > 0) {
     await logAudit(
       r.supabase,
@@ -179,7 +189,7 @@ router.put('/:id', requireRole('owner', 'doctor', 'secretary') as any, async (re
         action: 'update',
         field_changed: field,
         old_value: before[field] !== null && before[field] !== undefined ? String(before[field]) : null,
-        new_value: payload[field] !== null && payload[field] !== undefined ? String(payload[field]) : null,
+        new_value: updateRecord[field] !== null && updateRecord[field] !== undefined ? String(updateRecord[field]) : null,
       }))
     );
   }

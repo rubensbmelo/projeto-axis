@@ -128,16 +128,17 @@ perder o fio de qual ferramenta corrigiu o quê.
       do caso (campo, valor antigo, valor novo, quem, quando).
 - [x] Busca de casos (`GET /api/cases?search=`) cobre nome de paciente além
       de procedimento; placeholder da tela atualizado.
+- [x] Validação de payload **no backend** com zod (`src/lib/validation.ts`):
+      datas (AAAA-MM-DD), valores >= 0, CPF (formato, pacientes), campos
+      obrigatórios, `.strict()` contra chaves extras e transição de status
+      (não pode voltar no fluxo, exceto → `cancelado`). O frontend já
+      validava (UX); agora o backend rejeita payloads inválidos
+      independentemente do cliente.
 
 ### Pendências (adiadas de propósito)
 
-- [ ] Validação robusta dos dados recebidos **no backend** (datas,
-      valores >= 0, CPF, transições de status, permissões por campo). O
-      frontend já valida com zod (Fase 3), mas isso é só UX; o backend
-      precisa das mesmas regras.
 - [ ] Testes automatizados.
 - [ ] CORS restrito / hardening antes de produção.
-- [ ] Onboarding visual (tela de "criar organização").
 - [ ] Deploy.
 
 ## Próximo passo sugerido
