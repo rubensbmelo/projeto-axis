@@ -19,6 +19,32 @@ import {
 } from "@/components/ui/table";
 import { PageLoader } from "@/components/spinner";
 
+function CountUp({ value }: { value: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    const start = performance.now();
+    const duration = 800;
+    let frame = 0;
+
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayValue(value * eased);
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+
+  return <>{displayValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>;
+}
+
+function money(value: number) {
+  return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 function CountTable({
   title,
   data,
@@ -91,61 +117,40 @@ export default function ReportsPage() {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h2 className="font-heading text-xl font-semibold">Relatórios</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-heading text-[22px] font-semibold tracking-[-0.02em]">Painel</h2>
+        <p className="mt-1 text-[13px] text-muted-foreground">
           Visão geral dos casos da sua clínica.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Total de casos cadastrados</CardTitle>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card className="min-h-56 border-primary/20 py-6 lg:row-span-2">
+          <CardHeader className="px-6">
+            <CardTitle className="text-[17px] font-normal">Comissão do mês</CardTitle>
+            <p className="text-[13px] text-muted-foreground">Recebimentos registrados neste mês</p>
           </CardHeader>
-          <CardContent>
-            <p className="font-heading text-3xl font-semibold">
-              {summary.total_casos}
+          <CardContent className="mt-auto px-6">
+            <p className="font-heading text-[40px] leading-none font-semibold tracking-[-0.04em] text-primary tabular-nums">
+              <span className="mr-1 text-xl font-normal">R$</span><CountUp value={summary.comissao_do_mes} />
             </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Cirurgias realizadas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="font-heading text-3xl font-semibold">
-              {summary.cirurgias_realizadas}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Valor total faturado</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="font-heading text-3xl font-semibold">
-              R$ {summary.valor_total_faturado.toLocaleString("pt-BR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border-emerald-300/70">
-          <CardHeader>
-            <CardTitle className="text-sm">Total recebido</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="font-heading text-3xl font-semibold">
-              R$ {summary.valor_total_recebido.toLocaleString("pt-BR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-2">
+          <Card size="sm" className="py-5">
+            <CardHeader className="px-5"><CardTitle className="text-[13px] font-normal text-muted-foreground">Casos cadastrados</CardTitle></CardHeader>
+            <CardContent className="px-5"><p className="font-heading text-[28px] font-semibold tracking-[-0.03em]">{summary.total_casos}</p></CardContent>
+          </Card>
+          <Card size="sm" className="py-5">
+            <CardHeader className="px-5"><CardTitle className="text-[13px] font-normal text-muted-foreground">Cirurgias realizadas</CardTitle></CardHeader>
+            <CardContent className="px-5"><p className="font-heading text-[28px] font-semibold tracking-[-0.03em]">{summary.cirurgias_realizadas}</p></CardContent>
+          </Card>
+          <Card size="sm" className="py-5 sm:col-span-3 lg:col-span-2">
+            <CardHeader className="px-5"><CardTitle className="text-[13px] font-normal text-muted-foreground">Valor total faturado</CardTitle></CardHeader>
+            <CardContent className="px-5"><p className="font-heading text-[28px] font-semibold tracking-[-0.03em]">{money(summary.valor_total_faturado)}</p></CardContent>
+          </Card>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

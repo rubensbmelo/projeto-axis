@@ -22,13 +22,13 @@ export const STATUS_LABELS: Record<string, string> = {
 // Variante do Badge + cor semântica por status. Realizado/pago já não ficam
 // idênticos (verde neutro vs. verde forte).
 export const STATUS_BADGE: Record<string, { variant: string; className?: string }> = {
-  solicitado: { variant: "outline", className: "text-sky-700" },
-  autorizado: { variant: "outline", className: "text-blue-700" },
-  agendado: { variant: "secondary", className: "text-purple-700" },
-  realizado: { variant: "default", className: "bg-green-600 text-white" },
-  faturado: { variant: "outline", className: "text-amber-700" },
-  pago: { variant: "default", className: "bg-emerald-600 text-white" },
-  cancelado: { variant: "destructive", className: "" },
+  solicitado: { variant: "secondary", className: "bg-slate-100 text-slate-700" },
+  autorizado: { variant: "secondary", className: "bg-slate-100 text-status-authorized" },
+  agendado: { variant: "secondary", className: "bg-indigo-50 text-indigo-700" },
+  realizado: { variant: "secondary", className: "bg-status-received-bg text-status-received-text" },
+  faturado: { variant: "secondary", className: "bg-status-billed-bg text-status-billed-text" },
+  pago: { variant: "secondary", className: "bg-status-received-bg text-status-received-text" },
+  cancelado: { variant: "secondary", className: "bg-slate-100 text-slate-600" },
 };
 
 export function statusLabel(s?: string | null): string {
