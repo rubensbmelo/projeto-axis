@@ -4,10 +4,35 @@ import multer from 'multer';
 import { AuthedRequest, requireRole } from '../middleware/auth';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } }); // 15MB
+const MAX_UPLOAD_MB = Number(process.env.DOC_UPLOAD_MAX_MB ?? 15);
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 },
+});
 
 const BUCKET = 'case-documents';
 const VALID_TYPES = ['guia_solicitacao', 'guia_autorizacao', 'descricao_cirurgica', 'nota_fiscal', 'outro'];
+
+// Allowlist de MIME → extensões aceitas nos documentos anexados.
+const ALLOWED_DOC_TYPES: Record<string, string[]> = {
+  'application/pdf': ['.pdf'],
+  'image/jpeg': ['.jpg', '.jpeg'],
+  'image/png': ['.png'],
+  'image/webp': ['.webp'],
+  'application/msword': ['.doc'],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+  'application/vnd.ms-excel': ['.xls'],
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+};
+
+function validateFileType(file: Express.Multer.File): string | null {
+  const ext = (file.originalname.split('.').pop() || '').toLowerCase();
+  const allowedExts = ALLOWED_DOC_TYPES[file.mimetype];
+  if (!allowedExts || !allowedExts.includes(`.${ext}`)) {
+    return 'Tipo de arquivo não permitido. Use PDF, imagem (jpg/png/webp), Word (doc/docx) ou Excel (xls/xlsx).';
+  }
+  return null;
+}
 
 // Confere que o caso existe e pertence à organização antes de subir arquivo
 // (mesmo padrão do validateOrgReferences em cases.ts — FK não respeita RLS).
@@ -46,6 +71,9 @@ router.post('/:caseId/documents', requireRole('owner', 'doctor', 'secretary') as
   if (!VALID_TYPES.includes(documentType)) {
     return res.status(400).json({ error: `document_type inválido. Use um de: ${VALID_TYPES.join(', ')}` });
   }
+
+  const typeError = validateFileType(file);
+  if (typeError) return res.status(400).json({ error: typeError });
 
   const caseError = await validateCaseBelongsToOrg(r.supabase, r.orgId, req.params.caseId);
   if (caseError) return res.status(404).json({ error: caseError });

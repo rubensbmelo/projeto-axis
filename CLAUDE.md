@@ -140,10 +140,17 @@ perder o fio de qual ferramenta corrigiu o quê.
       upload/URL assinada e isolamento multi-tenant (39 testes). Exigem
       credenciais em `backend/.env`. `src/app.ts` exporta o app (o
       `index.ts` só sobe o servidor).
+- [x] Hardening de produção (`src/app.ts`): CORS restrito por `CORS_ORIGINS`
+      (allowlist), rate limiting global + específico (auth/upload) via
+      `express-rate-limit`, headers de segurança via `helmet`, remoção de
+      `x-powered-by`, e sanitização central de erros (objetos de erro do
+      Supabase viram só a mensagem). Uploads restringidos por allowlist de
+      MIME/extensão e tamanho configurável (`DOC_UPLOAD_MAX_MB`). Novas
+      variáveis documentadas em `backend/.env.example`. Testes: CORS, 429 e
+      upload inválido (+44 testes no total).
 
 ### Pendências (adiadas de propósito)
 
-- [ ] CORS restrito / hardening antes de produção.
 - [ ] Deploy.
 
 ## Próximo passo sugerido

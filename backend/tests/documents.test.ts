@@ -50,6 +50,16 @@ describe('documentos: upload, URL assinada e download', () => {
     expect(res.status).toBe(400);
   });
 
+  it('rejeita extensão fora da allowlist (400)', async () => {
+    const res = await http()
+      .post(`/api/cases/${caseId}/documents`)
+      .set(authHeaders(ctx.owner.token, ctx.orgId))
+      .field('document_type', 'outro')
+      .attach('file', Buffer.from('MZ fake exe'), 'malware.exe');
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(res.body)).toMatch(/não permitido/i);
+  });
+
   it('gera URL assinada e o download retorna o PDF (200)', async () => {
     const list = await http()
       .get(`/api/cases/${caseId}/documents`)
