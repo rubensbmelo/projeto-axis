@@ -51,6 +51,15 @@ describe('isolamento multi-tenant', () => {
     expect(res.status).toBe(403);
   });
 
+  it('descoberta de organizações ignora x-org-id antigo', async () => {
+    const res = await http().get('/api/organizations/me').set(authHeaders(orgA.owner.token, orgB.orgId));
+    expect(res.status).toBe(200);
+    expect(res.body.memberships).toEqual([
+      expect.objectContaining({ org_id: orgA.orgId, role: 'owner' }),
+    ]);
+    expect(res.body.active_org_id).toBe(orgA.orgId);
+  });
+
   it('rejeita caso referenciando paciente de outra organização (400)', async () => {
     const patientB = await createPatient(userB.token, orgB.orgId, 'Paciente B');
     const res = await http()

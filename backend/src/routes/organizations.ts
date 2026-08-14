@@ -4,10 +4,26 @@ import { adminClient } from '../supabaseClient';
 
 const router = Router();
 
-// GET /api/organizations/me — lista as organizações do usuário logado
-router.get('/me', authMiddleware as any, async (req, res) => {
+// GET /api/organizations/me — lista as organizações do usuário logado.
+// This discovery route must not depend on a possibly stale x-org-id stored by
+// the browser, otherwise an old/deleted org can hide valid memberships.
+router.get('/me', identifyUser as any, async (req, res) => {
   const r = req as unknown as AuthedRequest;
-  res.json({ memberships: r.memberships, active_org_id: r.orgId });
+  const { data: memberships, error } = await adminClient
+    .from('org_members')
+    .select('id, org_id, role')
+    .eq('user_id', r.user.id);
+
+  if (error) return res.status(500).json({ error: 'Failed to resolve organization' });
+
+  const result = (memberships || []).map((m: any) => ({
+    org_id: m.org_id,
+    role: m.role,
+    org_member_id: m.id,
+  }));
+  const requestedOrgId = req.headers['x-org-id'] as string | undefined;
+  const active = result.find((m) => m.org_id === requestedOrgId) || result[0];
+  res.json({ memberships: result, active_org_id: active?.org_id || '' });
 });
 
 // POST /api/organizations — cria uma clínica nova e vira 'owner' dela.

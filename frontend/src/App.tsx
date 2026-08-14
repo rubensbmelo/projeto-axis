@@ -18,19 +18,32 @@ import MembersPage from "@/pages/MembersPage";
 export default function App() {
   const { user, loading } = useAuth();
   const [memberships, setMemberships] = useState<OrgMembership[] | null>(null);
+  const [organizationError, setOrganizationError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!user) {
       setMemberships(null);
+      setOrganizationError(null);
       return;
     }
+    let active = true;
+    setMemberships(null);
+    setOrganizationError(null);
     api
       .get<{ memberships: OrgMembership[]; active_org_id: string }>("/organizations/me")
       .then((data) => {
+        if (!active) return;
         setMemberships(data.memberships);
         if (data.active_org_id) setOrgId(data.active_org_id);
       })
-      .catch(() => setMemberships([]));
+      .catch((error: Error) => {
+        if (!active) return;
+        console.error("Falha ao carregar organizações do usuário", error);
+        setOrganizationError(error);
+      });
+    return () => {
+      active = false;
+    };
   }, [user]);
 
   if (loading) return <PageLoader />;
@@ -38,6 +51,19 @@ export default function App() {
     return (
       <div key="login" className="animate-in fade-in-0 duration-200 ease-[var(--ease-axis-out)]">
         <LoginPage />
+      </div>
+    );
+  }
+  if (organizationError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4 text-center">
+        <div className="grid max-w-md gap-3">
+          <h1 className="text-lg font-semibold">Não foi possível carregar sua organização</h1>
+          <p className="text-sm text-muted-foreground">Atualize a página e tente novamente.</p>
+          <button className="text-sm underline" onClick={() => window.location.reload()}>
+            Tentar novamente
+          </button>
+        </div>
       </div>
     );
   }
