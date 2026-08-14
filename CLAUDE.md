@@ -148,6 +148,17 @@ perder o fio de qual ferramenta corrigiu o quê.
       MIME/extensão e tamanho configurável (`DOC_UPLOAD_MAX_MB`). Novas
       variáveis documentadas em `backend/.env.example`. Testes: CORS, 429 e
       upload inválido (+44 testes no total).
+- [x] RLS por papel (`003_rls_roles.sql`): escrita exige
+      owner/doctor/secretary no próprio banco (viewer não contorna o API);
+      Storage vinculado ao caso (case_id do caminho precisa existir na org).
+- [x] Auditoria atômica (`004_audit_trigger.sql`): trigger grava
+      insert/update-por-campo/delete na MESMA transação; `case_ref` (sem FK)
+      preserva o id do caso apagado + snapshot de procedimento/patient_name;
+      insert direto no `audit_log` revogado (só o trigger grava). O Express
+      não escreve mais auditoria (`logAudit` removido).
+- [x] Magic bytes no upload (`documents.ts`) além de MIME/extensão.
+- [x] Hardening dos containers: backend roda como usuário `node`
+      (não-root), `cap_drop: ALL` + `no-new-privileges` no compose.
 
 ### Pendências (adiadas de propósito)
 
@@ -155,6 +166,10 @@ perder o fio de qual ferramenta corrigiu o quê.
       `frontend/Dockerfile`, `frontend/Caddyfile`, `docker-compose.yml`,
       `.env.production.example`, guia em `DEPLOY.md`); falta executar no
       servidor (DNS, firewall, `docker compose up`).
+- [ ] Rotacionar `SUPABASE_SERVICE_ROLE_KEY` (usada no ambiente local/VPS;
+      nunca entrou no git) e criar Supabase exclusivo para CI.
+- [ ] Normalizar procedimentos (tabela de referência) para o ranking ficar
+      limpo.
 
 ## Próximo passo sugerido
 
