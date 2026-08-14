@@ -108,6 +108,7 @@ export interface ReportSummary {
   cirurgias_realizadas: number;
   valor_total_faturado: number;
   valor_total_recebido: number;
+  comissao_do_mes: number;
   cirurgias_por_mes: { month: string; count: number }[];
   por_hospital: { label: string; count: number }[];
   por_convenio: { label: string; count: number }[];

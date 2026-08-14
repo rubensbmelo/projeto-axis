@@ -101,11 +101,24 @@ router.get('/summary', async (req, res) => {
     .map(([label, total]) => ({ label, total }))
     .sort((a, b) => b.total - a.total);
 
+  // Comissão do mês corrente (por data_cirurgia) — destaque do painel do médico.
+  const now = new Date();
+  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const { data: commMonth, error: commMonthError } = await r.supabase
+    .from('surgery_cases')
+    .select('comissao_medico')
+    .eq('org_id', r.orgId)
+    .gte('data_cirurgia', `${month}-01`)
+    .lte('data_cirurgia', `${month}-31`);
+  if (commMonthError) return res.status(400).json({ error: commMonthError });
+  const comissao_do_mes = (commMonth || []).reduce((s: number, row: any) => s + (Number(row.comissao_medico) || 0), 0);
+
   res.json({
     total_casos: totalCasos ?? 0,
     cirurgias_realizadas: rows.length,
     valor_total_faturado,
     valor_total_recebido,
+    comissao_do_mes,
     cirurgias_por_mes,
     por_hospital,
     por_convenio,
