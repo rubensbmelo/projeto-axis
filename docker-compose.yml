@@ -42,9 +42,11 @@ services:
     dns:
       - 1.1.1.1
       - 8.8.8.8
+    # Nginx (no host) é o proxy HTTPS na frente do AXIS; o Caddy serve HTTP
+    # apenas na porta interna 127.0.0.1:8081 (não exposta à internet).
+    # SITE_ADDRESS deve ser ":80" nessa arquitetura.
     ports:
-      - "80:80"
-      - "443:443"
+      - "127.0.0.1:8081:80"
     volumes:
       - caddy_data:/data
       - caddy_config:/config

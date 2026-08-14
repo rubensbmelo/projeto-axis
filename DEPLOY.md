@@ -1,4 +1,4 @@
-# Deploy do AXIS na VPS (Docker Compose + Caddy)
+# Deploy do AXIS na VPS (Docker Compose + nginx + Caddy)
 
 > CI: o workflow `.github/workflows/ci.yml` roda em push/PR — typecheck +
 > testes (se as credenciais estiverem nos secrets), build do frontend e
@@ -9,13 +9,22 @@
 > config)`. Os secrets usados pelo CI: `SUPABASE_URL`,
 > `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
 
-Arquitetura: o **backend** roda num container (porta interna 4000, sem exposição
-ao host) e o **Caddy** serve o frontend (SPA) + proxy reverso de `/api/*` com
-HTTPS automático. Supabase continua na nuvem (banco, auth, RLS, Storage).
+## Arquitetura (VPS compartilhada)
+
+O **nginx do host** já é o proxy HTTPS de outros apps da mesma VPS (ex:
+RepFlow, WFMS). Para **não interferir neles**, o AXIS entra pela mesma porta
+via nginx — o **Caddy** do container passa a servir **HTTP interno** numa
+porta privada (`127.0.0.1:8081`), e o nginx faz o TLS do domínio do AXIS.
 
 ```
-Internet ── 80/443 ──► Caddy (frontend + /api) ──► backend:4000 (rede interna)
+Internet ── 80/443 ──► nginx (host) ──► 127.0.0.1:8081 ──► Caddy (frontend + /api) ──► backend:4000
 ```
+
+> ⚠️ **Regra de ouro em VPS compartilhada:** antes de qualquer mudança em
+> portas/serviços existentes, **verifique o que já roda na máquina**
+> (`docker ps`, `ss -tlnp`, `nginx -T`) e confirme com o responsável antes de
+> desativar/parar algo. Nunca pare um serviço que sirva outros projetos sem
+> essa checagem.
 
 ## Pré-requisitos
 
@@ -24,6 +33,7 @@ Internet ── 80/443 ──► Caddy (frontend + /api) ──► backend:4000 
   sudo apt update && sudo apt install -y docker.io docker-compose-plugin
   sudo systemctl enable --now docker
   ```
+- **nginx + certbot** já instalados no host (ou instale: `sudo apt install -y nginx certbot python3-certbot-nginx`)
 - Um domínio (ex: `axis.seudominio.com`) com **registro DNS A** apontando
   para o IP da VPS.
 
@@ -38,37 +48,66 @@ sudo ufw allow 443/tcp
 sudo ufw enable
 ```
 
-> As portas internas (4000) **não** precisam ser abertas — o backend não é
-> publicado no host (`docker-compose.yml` não declara `ports` para ele).
+> Portas internas (4000, 8081) **não** são abertas — o backend não é publicado
+> no host e o Caddy escuta só em `127.0.0.1`.
 
 ## 2. Clonar e configurar
 
 ```bash
 git clone https://github.com/rubensbmelo/projeto-axis.git && cd projeto-axis
 cp .env.production.example .env.production
-nano .env.production   # preencha Supabase + SITE_ADDRESS + CORS_ORIGINS
+nano .env.production   # Supabase + SITE_ADDRESS=:80 + CORS_ORIGINS
 ```
 
 Nunca commite/exponga o `.env.production` (contém a `SUPABASE_SERVICE_ROLE_KEY`).
 
-## 3. Subir
+## 3. Subir (frontend em HTTP interno)
 
 ```bash
 docker compose --env-file .env.production up -d --build
 docker compose ps                 # ambos healthy
-docker compose logs -f backend    # logs do backend
+curl http://127.0.0.1:8081/health # deve responder {"ok":true}
 ```
 
-O Caddy emite o certificado TLS automaticamente (letsencrypt) no primeiro
-acesso a `https://axis.seudominio.com`.
+## 4. Nginx na frente (HTTPS do domínio do AXIS)
 
-## 4. Verificação
+Crie o site (server block só na porta 80, com proxy pro Caddy):
+
+```bash
+sudo tee /etc/nginx/sites-enabled/axis > /dev/null <<'EOF'
+server {
+    listen 80;
+    server_name axis.seudominio.com;
+    location / {
+        proxy_pass http://127.0.0.1:8081;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+EOF
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Emita o certificado e ative o HTTPS (adiciona o bloco 443 + redirect):
+
+```bash
+sudo certbot --nginx -d axis.seudominio.com
+```
+
+> O nginx **não é reiniciado** nos passos acima (`reload`), para não derrubar
+> os outros apps. Sempre rode `nginx -t` antes do reload.
+
+## 5. Verificação
 
 - `https://<dominio>/` → tela de login
-- `https://<dominio>/health` → `{"ok":true}` (via proxy para o backend)
-- Logs: `docker compose logs -f`
+- `https://<dominio>/health` → `{"ok":true}`
+- `sudo nginx -t` e `curl -I https://<dominio>` ok
+- **Confirme que os outros domínios da VPS seguem no ar** (ex: `repflow.cloud`,
+  `lite.rbmelo.com`)
 
-## 5. Atualização (deploy novo)
+## 6. Atualização (deploy novo)
 
 ```bash
 git pull
@@ -78,15 +117,15 @@ docker compose --env-file .env.production up -d --build
 `restart: unless-stopped` garante que os containers sobem de novo após reboot
 ou crash.
 
-## 6. Backups
+## 7. Backups
 
 - **Supabase**: o banco vive na nuvem — habilite backups automáticos no painel
   (ou faça `pg_dump` periódico se precisar de export extra).
-- **Caddy**: os certificados ficam no volume `caddy_data` — não precisa
-  backup, o Caddy renova sozinho. Se trocar de servidor, os certs são
-  re-emitidos.
+- **Certificados TLS**: o nginx usa o certbot (`/etc/letsencrypt`), que renova
+  sozinho via timer — não precisa backup manual. O Caddy não guarda certs (só
+  HTTP interno).
 
-## 7. Monitoramento
+## 8. Monitoramento
 
 - **Health check**: o compose já tem `healthcheck` no backend; o Caddy depende
   dele via `depends_on: service_healthy`.
@@ -94,25 +133,28 @@ ou crash.
   (ou serviço externo) para `https://<dominio>/health`.
 - **Logs rotacionados**: `logging: max-size: 10m, max-file: 3` já configurado.
 
-## 8. Atualizações de segurança do host
+## 9. Atualizações de segurança do host
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo reboot   # containers voltam sozinhos (restart: unless-stopped)
 ```
 
-## 9. Lembretes de segurança
+## 10. Lembretes de segurança
 
 - **Nunca** expor a `SUPABASE_SERVICE_ROLE_KEY` no frontend ou em logs.
-- Não abrir a porta 4000 no firewall.
+- Não abrir as portas 4000/8081 no firewall (só 22/80/443).
 - Rodar containers sem `--privileged` (é o padrão aqui).
 - Usar SSH por chave (desativar senha no `/etc/ssh/sshd_config`).
+- Em VPS compartilhada, **nunca** parar serviços/portas usados por outros
+  projetos sem verificar antes (`docker ps`, `ss -tlnp`, `nginx -T`) e sem
+  aprovação do responsável.
 
 ## Teste local sem domínio
 
-Para testar o Caddy localmente (HTTP, sem TLS), use:
+Com o frontend em HTTP interno, o compose publica `127.0.0.1:8081`:
 
 ```bash
-SITE_ADDRESS=":8080" docker compose --env-file .env.production up -d --build
-# acesse http://localhost:8080
+docker compose --env-file .env.production up -d --build
+# acesse http://127.0.0.1:8081   (com SITE_ADDRESS=:80)
 ```
