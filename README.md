@@ -53,6 +53,11 @@ frontend/                   → React + Vite + TS + shadcn/ui (Tailwind)
 Na primeira vez: crie uma conta na tela de login e depois faça o onboarding
 da clínica (cria a organização e te torna `owner`).
 
+## Deploy
+
+Para produção (Docker Compose + Caddy com HTTPS automático numa VPS), siga o
+[`DEPLOY.md`](DEPLOY.md).
+
 ## Status
 
 - [x] Schema multi-tenant com RLS (+ RLS do Storage)

@@ -151,7 +151,10 @@ perder o fio de qual ferramenta corrigiu o quê.
 
 ### Pendências (adiadas de propósito)
 
-- [ ] Deploy.
+- [ ] Deploy na VPS — infra pronta (`backend/Dockerfile`,
+      `frontend/Dockerfile`, `frontend/Caddyfile`, `docker-compose.yml`,
+      `.env.production.example`, guia em `DEPLOY.md`); falta executar no
+      servidor (DNS, firewall, `docker compose up`).
 
 ## Próximo passo sugerido
 

@@ -1,0 +1,29 @@
+# AXIS — proxy reverso + HTTPS automático.
+# Serve o frontend (SPA) e encaminha /api/* para o backend (rede interna).
+{$SITE_ADDRESS} {
+	root * /srv
+	encode gzip zstd
+
+	# API → backend container (porta interna, nunca exposta ao host)
+	handle /api/* {
+		reverse_proxy backend:4000
+	}
+
+	# Frontend (SPA com fallback para /index.html)
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

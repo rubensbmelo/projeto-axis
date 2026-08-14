@@ -1,0 +1,12 @@
+# Segredos — nunca versionar
+.env
+.env.local
+.env.production
+**/.env
+**/.env.local
+**/.env.production
+
+# Artefatos
+node_modules
+dist
+*.log
