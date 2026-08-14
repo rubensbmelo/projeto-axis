@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { api, uploadDocument } from "@/api/client";
 import type { AuditEntry, CaseDocument, CaseRow, OrgMember } from "@/types";
-import { statusLabel } from "@/lib/status";
+import { PAYMENT_STATUS_BADGE, paymentStatus, paymentStatusLabel } from "@/lib/status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -156,8 +156,11 @@ export default function CaseDetailPage() {
             <Field
               label="Status"
               value={
-                <Badge variant={row.status === "cancelado" ? "destructive" : "default"}>
-                  {statusLabel(row.status)}
+                <Badge
+                  variant={PAYMENT_STATUS_BADGE[paymentStatus(row.status)].variant as never}
+                  className={PAYMENT_STATUS_BADGE[paymentStatus(row.status)].className}
+                >
+                  {paymentStatusLabel(row.status)}
                 </Badge>
               }
             />

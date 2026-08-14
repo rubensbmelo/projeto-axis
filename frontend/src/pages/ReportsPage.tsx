@@ -3,6 +3,8 @@ import { toast } from "sonner";
 
 import { api } from "@/api/client";
 import type { CaseRow, ReportSummary } from "@/types";
+import { PAYMENT_STATUS_BADGE, paymentStatus, paymentStatusLabel } from "@/lib/status";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -257,12 +259,13 @@ export default function ReportsPage() {
                   <TableHead>Procedimento</TableHead>
                   <TableHead>Valor cobrança</TableHead>
                   <TableHead>Entrada cobrança</TableHead>
+                  <TableHead>Status pagamento</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {pendencias.length === 0 ? (
                   <TableRow className="animate-in fade-in-0 duration-150 ease-[var(--ease-axis-out)]">
-                    <TableCell colSpan={4} className="h-16 text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="h-16 text-center text-muted-foreground">
                       Nenhuma pendência.
                     </TableCell>
                   </TableRow>
@@ -277,6 +280,14 @@ export default function ReportsPage() {
                           : "—"}
                       </TableCell>
                       <TableCell>{r.entrada_cobranca ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={PAYMENT_STATUS_BADGE[paymentStatus(r.status)].variant as never}
+                          className={PAYMENT_STATUS_BADGE[paymentStatus(r.status)].className}
+                        >
+                          {paymentStatusLabel(r.status)}
+                        </Badge>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { api } from "@/api/client";
 import type { CaseRow } from "@/types";
-import { STATUS_BADGE, STATUS_OPTIONS, statusLabel } from "@/lib/status";
+import { PAYMENT_STATUS_BADGE, STATUS_OPTIONS, paymentStatus, paymentStatusLabel, statusLabel } from "@/lib/status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -161,7 +161,7 @@ export default function CasesPage() {
                 </TableRow>
               ) : (
                 rows.map((row) => {
-                  const badge = STATUS_BADGE[row.status] ?? { variant: "outline" };
+                  const badge = PAYMENT_STATUS_BADGE[paymentStatus(row.status)];
                   return (
                     <TableRow key={row.id}>
                       <TableCell>{row.procedure?.name ?? "—"}</TableCell>
@@ -171,7 +171,7 @@ export default function CasesPage() {
                           variant={badge.variant as never}
                           className={badge.className}
                         >
-                          {statusLabel(row.status)}
+                          {paymentStatusLabel(row.status)}
                         </Badge>
                       </TableCell>
                       <TableCell>{row.data_cirurgia ?? "—"}</TableCell>

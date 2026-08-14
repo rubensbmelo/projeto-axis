@@ -24,6 +24,19 @@ describe('relatórios', () => {
         valor_cobranca: 1000,
       });
     expect(created.status).toBe(201);
+
+    const mismatched = await http()
+      .post('/api/cases')
+      .set(authHeaders(ctx.owner.token, ctx.orgId))
+      .send({
+        patient_id: patientId,
+        doctor_id: ctx.ownerMemberId,
+        procedure_id: procedureId,
+        status: 'solicitado',
+        entrada_cobranca: '2026-08-01',
+        valor_cobranca: 500,
+      });
+    expect(mismatched.status).toBe(201);
   });
 
   afterAll(async () => {
