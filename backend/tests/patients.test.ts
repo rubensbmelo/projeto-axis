@@ -1,0 +1,54 @@
+import { beforeAll, afterAll, describe, it, expect } from 'vitest';
+
+import { authHeaders, http, setupOrg, teardownOrg, type TestCtx } from './helpers';
+
+describe('patients: CPF, campos obrigatórios e payload estrito', () => {
+  let ctx: TestCtx;
+
+  beforeAll(async () => {
+    ctx = await setupOrg('Patients');
+  });
+
+  afterAll(async () => {
+    await teardownOrg(ctx);
+  });
+
+  const post = (body: unknown) =>
+    http().post('/api/patients').set(authHeaders(ctx.owner.token, ctx.orgId)).send(body as object);
+
+  it('cria paciente válido (201)', async () => {
+    const res = await post({ full_name: 'João da Silva' });
+    expect(res.status).toBe(201);
+    expect(res.body.org_id).toBe(ctx.orgId);
+  });
+
+  it('rejeita sem nome (400)', async () => {
+    const res = await post({ cpf: '123.456.789-01' });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejeita nome só com espaços (400)', async () => {
+    const res = await post({ full_name: '    ' });
+    expect(res.status).toBe(400);
+  });
+
+  it('aceita CPF com máscara (201)', async () => {
+    const res = await post({ full_name: 'Com Máscara', cpf: '123.456.789-01' });
+    expect(res.status).toBe(201);
+  });
+
+  it('rejeita CPF com quantidade errada de dígitos (400)', async () => {
+    const res = await post({ full_name: 'CPF Curto', cpf: '123' });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejeita data de nascimento inválida (400)', async () => {
+    const res = await post({ full_name: 'Data Errada', birth_date: '31/12/2020' });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejeita chave extra no payload (strict) (400)', async () => {
+    const res = await post({ full_name: 'Extra', org_id: ctx.orgId });
+    expect(res.status).toBe(400);
+  });
+});

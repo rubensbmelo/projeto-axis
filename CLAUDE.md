@@ -134,10 +134,15 @@ perder o fio de qual ferramenta corrigiu o quê.
       (não pode voltar no fluxo, exceto → `cancelado`). O frontend já
       validava (UX); agora o backend rejeita payloads inválidos
       independentemente do cliente.
+- [x] Testes automatizados de integração (vitest + supertest, `npm test`) —
+      rodam o app Express real contra o Supabase real: casos (payload,
+      status, refs por org), pacientes, permissões por papel, auditoria,
+      upload/URL assinada e isolamento multi-tenant (39 testes). Exigem
+      credenciais em `backend/.env`. `src/app.ts` exporta o app (o
+      `index.ts` só sobe o servidor).
 
 ### Pendências (adiadas de propósito)
 
-- [ ] Testes automatizados.
 - [ ] CORS restrito / hardening antes de produção.
 - [ ] Deploy.
 
