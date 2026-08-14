@@ -340,12 +340,12 @@ export default function CaseFormPage() {
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <Card>
           <CardHeader>
-            <CardTitle>{editing ? "Editar caso" : "Novo caso"}</CardTitle>
+            <CardTitle className="text-balance">{editing ? "Editar caso" : "Novo caso"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <h3 className="text-sm font-semibold">Identificação</h3>
-              <p className="mb-3 text-xs text-muted-foreground">
+              <h3 className="text-sm font-semibold text-balance">Identificação</h3>
+              <p className="mb-3 text-xs text-muted-foreground text-balance">
                 Paciente, médico e dados do procedimento.
               </p>
             </div>
@@ -551,8 +551,8 @@ export default function CaseFormPage() {
 
             <Separator className="my-2" />
             <div>
-              <h3 className="text-sm font-semibold">Agendamento</h3>
-              <p className="mb-3 text-xs text-muted-foreground">
+              <h3 className="text-sm font-semibold text-balance">Agendamento</h3>
+              <p className="mb-3 text-xs text-muted-foreground text-balance">
                 Datas do fluxo da cirurgia.
               </p>
             </div>
@@ -577,8 +577,8 @@ export default function CaseFormPage() {
 
             <Separator className="my-2" />
             <div>
-              <h3 className="text-sm font-semibold">Financeiro</h3>
-              <p className="mb-3 text-xs text-muted-foreground">
+              <h3 className="text-sm font-semibold text-balance">Financeiro</h3>
+              <p className="mb-3 text-xs text-muted-foreground text-balance">
                 Valores, comissão e recebimentos.
               </p>
             </div>
@@ -625,8 +625,8 @@ export default function CaseFormPage() {
 
             <Separator className="my-2" />
             <div>
-              <h3 className="text-sm font-semibold">Observações</h3>
-              <p className="mb-3 text-xs text-muted-foreground">
+              <h3 className="text-sm font-semibold text-balance">Observações</h3>
+              <p className="mb-3 text-xs text-muted-foreground text-balance">
                 Anotações livres sobre o caso.
               </p>
             </div>

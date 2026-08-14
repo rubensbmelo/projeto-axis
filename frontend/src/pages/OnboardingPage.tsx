@@ -52,8 +52,8 @@ export default function OnboardingPage({
           <div className="mb-2 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Activity className="size-6" />
           </div>
-          <CardTitle className="text-xl">Boas-vindas ao AXIS</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl text-balance">Boas-vindas ao AXIS</CardTitle>
+          <CardDescription className="text-balance">
             Crie sua clínica para começar a registrar casos cirúrgicos.
           </CardDescription>
         </CardHeader>

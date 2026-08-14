@@ -51,9 +51,8 @@ export default function LoginPage() {
             <Activity className="size-6" />
           </div>
           <CardTitle className="text-xl">AXIS</CardTitle>
-          <CardDescription className="max-w-64">
-            Controle de cirurgias e OPME para a sua clínica — do convênio ao
-            recebimento.
+          <CardDescription className="max-w-64 text-balance">
+            Controle de cirurgias e OPME, do convênio ao recebimento.
           </CardDescription>
         </CardHeader>
         <CardContent>

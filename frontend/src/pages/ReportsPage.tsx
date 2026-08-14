@@ -119,8 +119,8 @@ export default function ReportsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="font-heading text-[22px] font-semibold tracking-[-0.02em]">Painel</h2>
-        <p className="mt-1 text-[13px] text-muted-foreground">
+        <h2 className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-balance">Painel</h2>
+        <p className="mt-1 text-[13px] text-muted-foreground text-balance">
           Visão geral dos casos da sua clínica.
         </p>
       </div>
@@ -128,8 +128,8 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="min-h-56 border-primary/20 py-6 lg:row-span-2">
           <CardHeader className="px-6">
-            <CardTitle className="text-[17px] font-normal">Comissão do mês</CardTitle>
-            <p className="text-[13px] text-muted-foreground">Recebimentos registrados neste mês</p>
+            <CardTitle className="text-[17px] font-normal text-balance">Comissão do mês</CardTitle>
+            <p className="text-[13px] text-muted-foreground text-balance">Recebimentos registrados neste mês</p>
           </CardHeader>
           <CardContent className="mt-auto px-6">
             <p className="font-heading text-[40px] leading-none font-semibold tracking-[-0.04em] text-primary tabular-nums">
@@ -242,8 +242,8 @@ export default function ReportsPage() {
 
       <Card className="border-amber-300/70">
         <CardHeader>
-          <CardTitle>Pendências financeiras — faturado sem recebimento</CardTitle>
-          <p className="text-sm text-amber-700">
+            <CardTitle className="text-balance">Pendências financeiras — faturado sem recebimento</CardTitle>
+            <p className="text-sm text-amber-700 text-balance">
             Casos já faturados cuja cobrança ainda não foi recebida. Este é o
             principal gargalo que o AXIS resolve.
           </p>
