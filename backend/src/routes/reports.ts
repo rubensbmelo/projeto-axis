@@ -56,7 +56,10 @@ router.get('/summary', async (req, res) => {
   const por_convenio = countBy(rows, (row: any) => row.insurer?.name);
   const por_procedimento = countBy(rows, (row: any) => row.procedimento);
 
-  const valor_total_faturado = rows.reduce((sum: number, row: any) => sum + (Number(row.valor_cobranca) || 0), 0);
+  // Valor faturado = soma dos casos já faturados/pagos (status reflete cobrança).
+  const valor_total_faturado = rows
+    .filter((row: any) => ['faturado', 'pago'].includes(row.status))
+    .reduce((sum: number, row: any) => sum + (Number(row.valor_cobranca) || 0), 0);
 
   // Recebimentos: o que realmente entrou, agrupado pela data de recebimento.
   const { data: recv, error: recvError } = await r.supabase

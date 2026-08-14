@@ -60,11 +60,11 @@ Para produção (Docker Compose + Caddy com HTTPS automático numa VPS), siga o
 
 ## Status
 
-- [x] Schema multi-tenant com RLS (+ RLS do Storage)
+- [x] Schema multi-tenant com RLS (+ RLS do Storage + RLS por papel)
 - [x] Backend: organizações, pacientes, casos, documentos, relatórios,
       auditoria, validação de referências por org
+- [x] Validação de payload no backend (zod: datas, valores, CPF, status)
+- [x] Testes automatizados de integração (44 testes, `npm test`)
+- [x] Hardening (CORS restrito, rate limiting, helmet, sanitização de erros)
 - [x] Frontend (Fase 3): fluxo completo de um caso + cadastros + relatórios
-- [ ] Testes automatizados
-- [ ] Validação de payload no backend (hoje só no frontend)
-- [ ] CORS restrito / hardening para produção
-- [ ] Deploy
+- [x] Deploy na VPS (Docker Compose + nginx/Caddy + certbot) — ver `DEPLOY.md`

@@ -36,7 +36,11 @@ router.post('/', identifyUser as any, async (req, res) => {
     })
     .select()
     .single();
-  if (memberError) return res.status(400).json({ error: memberError });
+  if (memberError) {
+    // Evita organização órfã: se o membro falhar, desfaz a org criada.
+    await adminClient.from('organizations').delete().eq('id', org.id);
+    return res.status(400).json({ error: memberError });
+  }
 
   res.status(201).json({ organization: org, membership: member });
 });
