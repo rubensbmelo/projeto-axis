@@ -27,7 +27,7 @@ export default function OnboardingPage({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !fullName.trim()) {
-      toast.error("Preencha nome da clínica e seu nome");
+      toast.error("Preencha o nome do seu consultório e seu nome");
       return;
     }
     setLoading(true);
@@ -54,13 +54,13 @@ export default function OnboardingPage({
           </div>
           <CardTitle className="text-xl text-balance">Boas-vindas ao AXIS</CardTitle>
           <CardDescription className="text-balance">
-            Crie sua clínica para começar a registrar casos cirúrgicos.
+            Crie seu espaço no AXIS para começar a registrar seus casos cirúrgicos.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Nome da clínica</Label>
+              <Label htmlFor="name">Nome do seu consultório ou prática</Label>
               <Input
                 id="name"
                 value={name}
@@ -87,7 +87,7 @@ export default function OnboardingPage({
               />
             </div>
             <Button type="submit" className="w-full" loading={loading}>
-              Criar organização
+              Criar espaço
             </Button>
           </form>
         </CardContent>

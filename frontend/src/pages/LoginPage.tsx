@@ -65,7 +65,7 @@ export default function LoginPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="voce@clinica.com"
+                placeholder="voce@consultorio.com"
               />
             </div>
             <div className="grid gap-2">

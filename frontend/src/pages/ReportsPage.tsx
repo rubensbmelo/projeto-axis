@@ -123,7 +123,7 @@ export default function ReportsPage() {
       <div>
         <h2 className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-balance">Painel</h2>
         <p className="mt-1 text-[13px] text-muted-foreground text-balance">
-          Visão geral dos casos da sua clínica.
+           Visão geral dos casos do seu espaço no AXIS.
         </p>
       </div>
 

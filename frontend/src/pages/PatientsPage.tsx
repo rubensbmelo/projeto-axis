@@ -249,7 +249,7 @@ export default function PatientsPage() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editing ? "Editar paciente" : "Novo paciente"}</DialogTitle>
-            <DialogDescription>Cadastro de paciente da clínica.</DialogDescription>
+            <DialogDescription>Cadastro de paciente do seu consultório.</DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">

@@ -162,7 +162,7 @@ export default function MembersPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Adicionar membro</DialogTitle>
-            <DialogDescription>Vincule um usuário do Supabase a esta clínica.</DialogDescription>
+            <DialogDescription>Vincule um usuário do Supabase à sua equipe.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
             <div className="grid gap-2">
