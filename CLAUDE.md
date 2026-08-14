@@ -172,17 +172,24 @@ perder o fio de qual ferramenta corrigiu o quê.
 
 ### Pendências (adiadas de propósito)
 
-- [ ] Deploy na VPS — infra pronta (`backend/Dockerfile`,
-      `frontend/Dockerfile`, `frontend/Caddyfile`, `docker-compose.yml`,
-      `.env.production.example`, guia em `DEPLOY.md`); falta executar no
-      servidor (DNS, firewall, `docker compose up`).
 - [ ] Rotacionar `SUPABASE_SERVICE_ROLE_KEY` (usada no ambiente local/VPS;
       nunca entrou no git) e criar Supabase exclusivo para CI.
-- [ ] Normalizar procedimentos (tabela de referência) para o ranking ficar
-      limpo.
+- [ ] **Login deve abrir direto no painel/dashboard** (comissão em destaque),
+      não na lista de casos — é o "chamariz" comercial do produto, precisa
+      ser a primeira coisa que o médico vê. (Combinado em conversa, ainda
+      não implementado nessa sessão: hoje `/` redireciona para `/casos`.)
+- [ ] **BUG em investigação**: campos de seleção (Combobox de paciente,
+      médico, procedimento, hospital, convênio, fornecedor) não abrem na
+      tela "Novo caso" (`/casos/novo`). Sem erro de console, sem falha de
+      rede — suspeita de bug de CSS/z-index no Popover ou de estado do
+      componente. Investigação em andamento.
+- [ ] **Ajuste de linguagem "clínica" → "consultório"/"espaço de trabalho"**
+      em todo o app (produto é centrado no médico, não numa clínica fixa).
+      Estado: frontend já aplicado (Onboarding, Login, Patients, Reports);
+      falta conferir mensagens do backend (ainda usam "organização") e docs.
 
 ## Próximo passo sugerido
 
-Construir o frontend (Fase 3) em cima das rotas já prontas em
-`backend/src/routes/`. Ver `README.md` para como rodar o backend localmente
-primeiro.
+- Corrigir o bug do Combobox em `/casos/novo` (bloqueia o fluxo de criar caso).
+- Redirecionar o login para o painel (dashboard de relatórios) em vez de
+  `/casos`, seguindo o combinado de "chamariz" do médico.
