@@ -7,6 +7,12 @@ describe('relatórios', () => {
   let patientId: string;
   let procedureId: string;
 
+  const daysAgo = (days: number) => {
+    const date = new Date();
+    date.setUTCDate(date.getUTCDate() - days);
+    return date.toISOString().slice(0, 10);
+  };
+
   beforeAll(async () => {
     ctx = await setupOrg('Reports');
     patientId = await createPatient(ctx.owner.token, ctx.orgId, 'Paciente Reports');
@@ -20,7 +26,7 @@ describe('relatórios', () => {
         doctor_id: ctx.ownerMemberId,
         procedure_id: procedureId,
         status: 'faturado',
-        entrada_cobranca: '2026-08-01',
+        entrada_cobranca: daysAgo(45),
         valor_cobranca: 1000,
       });
     expect(created.status).toBe(201);
@@ -33,7 +39,7 @@ describe('relatórios', () => {
         doctor_id: ctx.ownerMemberId,
         procedure_id: procedureId,
         status: 'solicitado',
-        entrada_cobranca: '2026-08-01',
+        data_solicitacao: daysAgo(45),
         valor_cobranca: 500,
       });
     expect(mismatched.status).toBe(201);
@@ -51,5 +57,19 @@ describe('relatórios', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
     expect(res.body[0].procedure.name).toBe('Procedimento Reports');
+  });
+
+  it('calcula alertas e faturamento mensal', async () => {
+    const [alerts, summary] = await Promise.all([
+      http().get('/api/reports/alerts').set(authHeaders(ctx.owner.token, ctx.orgId)),
+      http().get('/api/reports/summary').set(authHeaders(ctx.owner.token, ctx.orgId)),
+    ]);
+
+    expect(alerts.status).toBe(200);
+    expect(alerts.body.authorization.count).toBe(1);
+    expect(alerts.body.billing.count).toBe(1);
+    expect(summary.status).toBe(200);
+    expect(summary.body.faturamento_por_mes).toHaveLength(6);
+    expect(summary.body.faturamento_por_mes.some((month: any) => month.valor === 1000)).toBe(true);
   });
 });

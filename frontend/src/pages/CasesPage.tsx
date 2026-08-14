@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -52,9 +52,11 @@ function LoadingRows({ cols }: { cols: number }) {
 
 export default function CasesPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [rows, setRows] = useState<CaseRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | undefined>();
+  const [alert, setAlert] = useState<string | undefined>(() => searchParams.get("alert") ?? undefined);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [toDelete, setToDelete] = useState<CaseRow | null>(null);
@@ -72,6 +74,7 @@ export default function CasesPage() {
       const params = new URLSearchParams();
       if (status && status !== "all") params.set("status", status);
       if (debouncedSearch) params.set("search", debouncedSearch);
+      if (alert) params.set("alert", alert);
       const qs = params.toString();
       const data = await api.get<CaseRow[]>(`/cases${qs ? "?" + qs : ""}`);
       setRows(data);
@@ -80,7 +83,11 @@ export default function CasesPage() {
     } finally {
       setLoading(false);
     }
-  }, [status, debouncedSearch]);
+  }, [status, debouncedSearch, alert]);
+
+  useEffect(() => {
+    setAlert(searchParams.get("alert") ?? undefined);
+  }, [searchParams]);
 
   useEffect(() => {
     load();

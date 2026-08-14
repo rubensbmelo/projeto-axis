@@ -109,12 +109,18 @@ export interface ReportSummary {
   valor_total_faturado: number;
   valor_total_recebido: number;
   comissao_do_mes: number;
+  faturamento_por_mes: { mes: string; valor: number }[];
   cirurgias_por_mes: { month: string; count: number }[];
   por_hospital: { label: string; count: number }[];
   por_convenio: { label: string; count: number }[];
   por_procedimento: { label: string; count: number }[];
   recebimentos_por_mes: { month: string; count: number; total: number }[];
   comissao_por_medico: { label: string; total: number }[];
+}
+
+export interface ReportAlerts {
+  authorization: { count: number };
+  billing: { count: number };
 }
 
 export interface AuditEntry {

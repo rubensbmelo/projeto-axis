@@ -1,8 +1,19 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { toast } from "sonner";
 
 import { api } from "@/api/client";
-import type { CaseRow, ReportSummary } from "@/types";
+import type { CaseRow, ReportAlerts, ReportSummary } from "@/types";
 import { PAYMENT_STATUS_BADGE, paymentStatus, paymentStatusLabel } from "@/lib/status";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -92,18 +103,22 @@ function CountTable({
 }
 
 export default function ReportsPage() {
+  const navigate = useNavigate();
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [pendencias, setPendencias] = useState<CaseRow[]>([]);
+  const [alerts, setAlerts] = useState<ReportAlerts | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       api.get<ReportSummary>("/reports/summary"),
       api.get<CaseRow[]>("/reports/pendencias-financeiras"),
+      api.get<ReportAlerts>("/reports/alerts"),
     ])
-      .then(([s, p]) => {
+      .then(([s, p, a]) => {
         setSummary(s);
         setPendencias(p);
+        setAlerts(a);
       })
       .catch((e) => toast.error((e as Error).message))
       .finally(() => setLoading(false));
@@ -118,6 +133,21 @@ export default function ReportsPage() {
     count,
   }));
 
+  const alertItems = [
+    {
+      key: "authorization",
+      title: "Autorização pendente",
+      description: "Solicitações há mais de 21 dias úteis sem resposta.",
+      count: alerts?.authorization.count ?? 0,
+    },
+    {
+      key: "billing",
+      title: "Cobrança sem retorno",
+      description: "Cobranças faturadas há mais de 30 dias sem recebimento.",
+      count: alerts?.billing.count ?? 0,
+    },
+  ];
+
   return (
     <div className="space-y-8">
       <div>
@@ -126,6 +156,45 @@ export default function ReportsPage() {
            Visão geral dos casos do seu espaço no AXIS.
         </p>
       </div>
+
+      <section aria-labelledby="alerts-title" className="space-y-3">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="size-4 text-destructive" />
+          <h3 id="alerts-title" className="text-sm font-semibold">Central de alertas</h3>
+        </div>
+        {alertItems.some((item) => item.count > 0) ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {alertItems.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                className="group rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-left transition-colors hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-destructive/40"
+                onClick={() => navigate(`/casos?alert=${item.key}`)}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-destructive">{item.title}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+                  </div>
+                  <ArrowRight className="mt-0.5 size-4 shrink-0 text-destructive transition-transform group-hover:translate-x-0.5" />
+                </div>
+                <p className="mt-4 font-heading text-3xl font-semibold tracking-[-0.03em] text-destructive tabular-nums">
+                  {item.count}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">Ver casos</p>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 rounded-xl border border-status-received-bg bg-status-received-bg/40 p-4">
+            <CheckCircle2 className="size-5 text-status-received-text" />
+            <div>
+              <p className="text-sm font-semibold text-status-received-text">Tudo em dia</p>
+              <p className="text-xs text-muted-foreground">Nenhum prazo crítico encontrado.</p>
+            </div>
+          </div>
+        )}
+      </section>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="min-h-56 border-primary/20 py-6 lg:row-span-2">
@@ -154,6 +223,36 @@ export default function ReportsPage() {
           </Card>
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Faturamento mensal</CardTitle>
+          <p className="text-xs text-muted-foreground">Valor de cobranças faturadas nos últimos 6 meses.</p>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={summary.faturamento_por_mes} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
+                <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 11 }}
+                  tickFormatter={(value: number) => `R$ ${(value / 1000).toFixed(0)}k`}
+                  width={48}
+                />
+                <Tooltip
+                  cursor={{ fill: "var(--muted)" }}
+                  formatter={(value) => [money(Number(value) || 0), "Faturado"]}
+                  labelFormatter={(label) => `Mês ${label}`}
+                />
+                <Bar dataKey="valor" fill="var(--primary)" radius={[4, 4, 0, 0]} maxBarSize={42} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="space-y-4">

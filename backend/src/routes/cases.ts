@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { AuthedRequest, requireRole } from '../middleware/auth';
 import { caseCreateSchema, caseUpdateSchema, parseOrError, statusTransitionError } from '../lib/validation';
+import { filterCasesByAlert, type CaseAlertType } from '../lib/caseAlerts';
 
 const router = Router();
 
@@ -60,9 +61,10 @@ const CASE_SELECT = `
 // GET /api/cases — lista com filtros opcionais
 router.get('/', async (req, res) => {
   const r = req as unknown as AuthedRequest;
-  const { status, doctor_id, from, to, search } = req.query as Record<string, string>;
+  const { status, doctor_id, from, to, search, alert } = req.query as Record<string, string>;
 
   let query = r.supabase.from('surgery_cases').select(CASE_SELECT).eq('org_id', r.orgId);
+  if (r.orgRole === 'doctor') query = query.eq('doctor_id', r.orgMemberId);
   if (status) query = query.eq('status', status);
   if (doctor_id) query = query.eq('doctor_id', doctor_id);
   if (from) query = query.gte('data_cirurgia', from);
@@ -91,9 +93,13 @@ router.get('/', async (req, res) => {
     }
   }
 
-  const { data, error } = await query.order('created_at', { ascending: false });
+  const { data: queriedData, error } = await query.order('created_at', { ascending: false });
   if (error) return res.status(400).json({ error });
-  res.json(data || []);
+  if (alert && !['authorization', 'billing'].includes(alert)) {
+    return res.status(400).json({ error: 'Alerta inválido' });
+  }
+  const data = alert ? filterCasesByAlert(queriedData || [], alert as CaseAlertType) : queriedData || [];
+  res.json(data);
 });
 
 // GET /api/cases/:id
