@@ -1,6 +1,6 @@
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 
-import { authHeaders, createPatient, http, setupOrg, teardownOrg, type TestCtx } from './helpers';
+import { authHeaders, createPatient, createProcedure, http, setupOrg, teardownOrg, type TestCtx } from './helpers';
 
 describe('documentos: upload, URL assinada e download', () => {
   let ctx: TestCtx;
@@ -11,10 +11,11 @@ describe('documentos: upload, URL assinada e download', () => {
   beforeAll(async () => {
     ctx = await setupOrg('Docs');
     const patientId = await createPatient(ctx.owner.token, ctx.orgId, 'Paciente Docs');
+    const procId = await createProcedure(ctx.owner.token, ctx.orgId, 'Caso docs');
     const created = await http()
       .post('/api/cases')
       .set(authHeaders(ctx.owner.token, ctx.orgId))
-      .send({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedimento: 'Caso docs' });
+      .send({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId });
     caseId = created.body.id;
   });
 

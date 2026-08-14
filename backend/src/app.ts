@@ -84,6 +84,7 @@ app.use('/api/reports', authMiddleware, reportsRoutes);
 app.use('/api/hospitals', authMiddleware, referenceTableRouter('hospitals'));
 app.use('/api/insurers', authMiddleware, referenceTableRouter('insurers'));
 app.use('/api/suppliers', authMiddleware, referenceTableRouter('suppliers'));
+app.use('/api/procedures', authMiddleware, referenceTableRouter('procedures'));
 
 // Erros não capturados: loga no servidor, devolve mensagem genérica.
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

@@ -38,9 +38,9 @@ export interface CaseRow {
   hospital_id: string | null;
   insurer_id: string | null;
   supplier_id: string | null;
+  procedure_id: string;
   matricula: string | null;
   guia_numero: string | null;
-  procedimento: string;
   usa_opme: boolean;
   ficha_de_sala: boolean;
   status: string;
@@ -62,6 +62,7 @@ export interface CaseRow {
   hospital?: { id: string; name: string } | null;
   insurer?: { id: string; name: string } | null;
   supplier?: { id: string; name: string } | null;
+  procedure?: { id: string; name: string } | null;
   doctor?: { id: string; full_name: string } | null;
 }
 
@@ -71,9 +72,9 @@ export interface CasePayload {
   hospital_id?: string | null;
   insurer_id?: string | null;
   supplier_id?: string | null;
+  procedure_id: string;
   matricula?: string | null;
   guia_numero?: string | null;
-  procedimento: string;
   usa_opme?: boolean;
   ficha_de_sala?: boolean;
   status?: string;

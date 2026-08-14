@@ -164,7 +164,7 @@ export default function CasesPage() {
                   const badge = STATUS_BADGE[row.status] ?? { variant: "outline" };
                   return (
                     <TableRow key={row.id}>
-                      <TableCell>{row.procedimento}</TableCell>
+                      <TableCell>{row.procedure?.name ?? "—"}</TableCell>
                       <TableCell>{row.patient?.full_name ?? "—"}</TableCell>
                       <TableCell>
                         <Badge
@@ -223,7 +223,7 @@ export default function CasesPage() {
           if (!open) setToDelete(null);
         }}
         title="Excluir caso?"
-        description={`O caso "${toDelete?.procedimento}" será excluído permanentemente.`}
+        description={`O caso "${toDelete?.procedure?.name}" será excluído permanentemente.`}
         confirmLabel="Excluir"
         loading={deleting}
         onConfirm={remove}

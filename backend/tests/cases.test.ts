@@ -1,14 +1,16 @@
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 
-import { authHeaders, createPatient, http, setupOrg, teardownOrg, type TestCtx } from './helpers';
+import { authHeaders, createPatient, createProcedure, http, setupOrg, teardownOrg, type TestCtx } from './helpers';
 
 describe('cases: payload, status e referências por organização', () => {
   let ctx: TestCtx;
   let patientId: string;
+  let procId: string;
 
   beforeAll(async () => {
     ctx = await setupOrg('Cases');
     patientId = await createPatient(ctx.owner.token, ctx.orgId, 'Paciente Teste');
+    procId = await createProcedure(ctx.owner.token, ctx.orgId, 'Síndrome do túnel do carpo');
   });
 
   afterAll(async () => {
@@ -22,7 +24,7 @@ describe('cases: payload, status e referências por organização', () => {
     const res = await post({
       patient_id: patientId,
       doctor_id: ctx.ownerMemberId,
-      procedimento: 'Síndrome do túnel do carpo',
+      procedure_id: procId,
       usa_opme: true,
       valor_cobranca: 1000,
     });
@@ -36,22 +38,22 @@ describe('cases: payload, status e referências por organização', () => {
   });
 
   it('rejeita valor negativo (400)', async () => {
-    const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedimento: 'X', valor_cobranca: -5 });
+    const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId, valor_cobranca: -5 });
     expect(res.status).toBe(400);
   });
 
   it('rejeita data inválida (400)', async () => {
-    const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedimento: 'X', data_cirurgia: '15/07/2026' });
+    const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId, data_cirurgia: '15/07/2026' });
     expect(res.status).toBe(400);
   });
 
   it('rejeita id que não é uuid (400)', async () => {
-    const res = await post({ patient_id: 'nao-e-uuid', doctor_id: ctx.ownerMemberId, procedimento: 'X' });
+    const res = await post({ patient_id: 'nao-e-uuid', doctor_id: ctx.ownerMemberId, procedure_id: procId });
     expect(res.status).toBe(400);
   });
 
-  it('rejeita procedimento em branco (400)', async () => {
-    const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedimento: '   ' });
+  it('rejeita sem procedure_id (400)', async () => {
+    const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId });
     expect(res.status).toBe(400);
   });
 
@@ -59,7 +61,7 @@ describe('cases: payload, status e referências por organização', () => {
     const res = await post({
       patient_id: patientId,
       doctor_id: ctx.ownerMemberId,
-      procedimento: 'Injeção',
+      procedure_id: procId,
       org_id: '00000000-0000-0000-0000-000000000000',
     });
     expect(res.status).toBe(201);
@@ -70,7 +72,19 @@ describe('cases: payload, status e referências por organização', () => {
     const other = await setupOrg('OtherRef');
     try {
       const otherPatient = await createPatient(other.owner.token, other.orgId, 'Outro Paciente');
-      const res = await post({ patient_id: otherPatient, doctor_id: ctx.ownerMemberId, procedimento: 'Cross' });
+      const res = await post({ patient_id: otherPatient, doctor_id: ctx.ownerMemberId, procedure_id: procId });
+      expect(res.status).toBe(400);
+      expect(JSON.stringify(res.body)).toMatch(/não pertence a esta organização|não existe/i);
+    } finally {
+      await teardownOrg(other);
+    }
+  });
+
+  it('rejeita referência de procedimento de outra organização (400)', async () => {
+    const other = await setupOrg('OtherProc');
+    try {
+      const otherProc = await createProcedure(other.owner.token, other.orgId, 'Proc Outra Org');
+      const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: otherProc });
       expect(res.status).toBe(400);
       expect(JSON.stringify(res.body)).toMatch(/não pertence a esta organização|não existe/i);
     } finally {
@@ -81,7 +95,7 @@ describe('cases: payload, status e referências por organização', () => {
   describe('transição de status', () => {
     let caseId: string;
     beforeAll(async () => {
-      const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedimento: 'Status Test' });
+      const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId });
       caseId = res.body.id;
     });
 

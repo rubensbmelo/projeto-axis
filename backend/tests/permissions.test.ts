@@ -4,6 +4,7 @@ import {
   addMember,
   authHeaders,
   createPatient,
+  createProcedure,
   createTestUser,
   http,
   setupOrg,
@@ -17,6 +18,7 @@ describe('permissões por papel (owner/doctor/secretary/viewer)', () => {
   let viewer: TestUser;
   let secretary: TestUser;
   let patientId: string;
+  let procId: string;
   let caseId: string;
 
   beforeAll(async () => {
@@ -30,6 +32,7 @@ describe('permissões por papel (owner/doctor/secretary/viewer)', () => {
     await addMember(ctx.owner.token, ctx.orgId, secretary.userId, 'secretary', 'Secretária');
 
     patientId = await createPatient(ctx.owner.token, ctx.orgId, 'Paciente Perm');
+    procId = await createProcedure(ctx.owner.token, ctx.orgId, 'Procedimento Perm');
   });
 
   afterAll(async () => {
@@ -45,7 +48,7 @@ describe('permissões por papel (owner/doctor/secretary/viewer)', () => {
     const res = await http()
       .post('/api/cases')
       .set(authHeaders(viewer.token, ctx.orgId))
-      .send({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedimento: 'X' });
+      .send({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId });
     expect(res.status).toBe(403);
   });
 
@@ -63,7 +66,7 @@ describe('permissões por papel (owner/doctor/secretary/viewer)', () => {
     const res = await http()
       .post('/api/cases')
       .set(authHeaders(secretary.token, ctx.orgId))
-      .send({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedimento: 'Caso da secretária' });
+      .send({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId });
     expect(res.status).toBe(201);
     caseId = res.body.id;
   });

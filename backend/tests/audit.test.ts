@@ -1,18 +1,20 @@
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 
-import { admin, authHeaders, createPatient, http, setupOrg, teardownOrg, type TestCtx } from './helpers';
+import { admin, authHeaders, createPatient, createProcedure, http, setupOrg, teardownOrg, type TestCtx } from './helpers';
 
 describe('auditoria: insert e updates gravados por campo', () => {
   let ctx: TestCtx;
   let caseId: string;
+  let procId: string;
 
   beforeAll(async () => {
     ctx = await setupOrg('Audit');
     const patientId = await createPatient(ctx.owner.token, ctx.orgId, 'Paciente Audit');
+    procId = await createProcedure(ctx.owner.token, ctx.orgId, 'Caso audit');
     const created = await http()
       .post('/api/cases')
       .set(authHeaders(ctx.owner.token, ctx.orgId))
-      .send({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedimento: 'Caso audit' });
+      .send({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId });
     caseId = created.body.id;
   });
 
@@ -50,10 +52,12 @@ describe('auditoria: insert e updates gravados por campo', () => {
 
   it('exclusão é auditada e preserva a identidade do caso (case_ref/procedimento/paciente)', async () => {
     const patientId = await createPatient(ctx.owner.token, ctx.orgId, 'Paciente Excluído');
+    const procName = 'Caso a excluir';
+    const delProc = await createProcedure(ctx.owner.token, ctx.orgId, procName);
     const created = await http()
       .post('/api/cases')
       .set(authHeaders(ctx.owner.token, ctx.orgId))
-      .send({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedimento: 'Caso a excluir' });
+      .send({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: delProc });
     expect(created.status).toBe(201);
     const caseId = created.body.id;
 
@@ -72,7 +76,7 @@ describe('auditoria: insert e updates gravados por campo', () => {
     const delRow = rows!.find((e: any) => e.action === 'delete');
     expect(delRow).toBeTruthy();
     expect(delRow!.case_ref).toBe(caseId);
-    expect(delRow!.procedimento).toBe('Caso a excluir');
+    expect(delRow!.procedimento).toBe(procName);
     expect(delRow!.patient_name).toBe('Paciente Excluído');
   });
 });

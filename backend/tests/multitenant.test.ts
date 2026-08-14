@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   authHeaders,
   createPatient,
+  createProcedure,
   createTestUser,
   http,
   setupOrg,
@@ -15,6 +16,8 @@ describe('isolamento multi-tenant', () => {
   let orgA: TestCtx;
   let orgB: TestCtx;
   let userB: TestUser;
+  let procA: string;
+  let procB: string;
 
   beforeAll(async () => {
     orgA = await setupOrg('TenantA');
@@ -22,6 +25,9 @@ describe('isolamento multi-tenant', () => {
 
     // Usuário B pertence à org B (owner)
     userB = orgB.owner;
+
+    procA = await createProcedure(orgA.owner.token, orgA.orgId, 'Proc A');
+    procB = await createProcedure(userB.token, orgB.orgId, 'Proc B');
   });
 
   afterAll(async () => {
@@ -50,7 +56,7 @@ describe('isolamento multi-tenant', () => {
     const res = await http()
       .post('/api/cases')
       .set(authHeaders(orgA.owner.token, orgA.orgId))
-      .send({ patient_id: patientB, doctor_id: orgA.ownerMemberId, procedimento: 'Cross tenant' });
+      .send({ patient_id: patientB, doctor_id: orgA.ownerMemberId, procedure_id: procA });
     expect(res.status).toBe(400);
   });
 
@@ -58,7 +64,7 @@ describe('isolamento multi-tenant', () => {
     const createdB = await http()
       .post('/api/cases')
       .set(authHeaders(userB.token, orgB.orgId))
-      .send({ patient_id: (await createPatient(userB.token, orgB.orgId, 'Paciente B2')), doctor_id: orgB.ownerMemberId, procedimento: 'Caso B' });
+      .send({ patient_id: (await createPatient(userB.token, orgB.orgId, 'Paciente B2')), doctor_id: orgB.ownerMemberId, procedure_id: procB });
 
     const res = await http()
       .put(`/api/cases/${createdB.body.id}`)

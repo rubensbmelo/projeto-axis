@@ -265,7 +265,7 @@ export default function ReportsPage() {
                   pendencias.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell>{r.patient?.full_name ?? "—"}</TableCell>
-                      <TableCell>{r.procedimento}</TableCell>
+                      <TableCell>{r.procedure?.name ?? "—"}</TableCell>
                       <TableCell>
                         {r.valor_cobranca != null
                           ? `R$ ${r.valor_cobranca.toFixed(2)}`

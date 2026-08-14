@@ -31,7 +31,7 @@ router.get('/summary', async (req, res) => {
 
   let query = r.supabase
     .from('surgery_cases')
-    .select('data_cirurgia, valor_cobranca, hospital:hospitals(name), insurer:insurers(name), procedimento, status')
+    .select('data_cirurgia, valor_cobranca, hospital:hospitals(name), insurer:insurers(name), procedure:procedures(name), status')
     .eq('org_id', r.orgId)
     .not('data_cirurgia', 'is', null);
 
@@ -54,7 +54,7 @@ router.get('/summary', async (req, res) => {
 
   const por_hospital = countBy(rows, (row: any) => row.hospital?.name);
   const por_convenio = countBy(rows, (row: any) => row.insurer?.name);
-  const por_procedimento = countBy(rows, (row: any) => row.procedimento);
+  const por_procedimento = countBy(rows, (row: any) => row.procedure?.name);
 
   // Valor faturado = soma dos casos já faturados/pagos (status reflete cobrança).
   const valor_total_faturado = rows

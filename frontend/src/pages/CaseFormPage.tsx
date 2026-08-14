@@ -82,9 +82,9 @@ interface CaseFormValues {
   hospital_id: string;
   insurer_id: string;
   supplier_id: string;
+  procedure_id: string;
   matricula: string;
   guia_numero: string;
-  procedimento: string;
   usa_opme: boolean;
   ficha_de_sala: boolean;
   status: string;
@@ -108,9 +108,9 @@ const EMPTY_VALUES: CaseFormValues = {
   hospital_id: "",
   insurer_id: "",
   supplier_id: "",
+  procedure_id: "",
   matricula: "",
   guia_numero: "",
-  procedimento: "",
   usa_opme: false,
   ficha_de_sala: false,
   status: "solicitado",
@@ -150,9 +150,9 @@ function makeCaseSchema(currentStatus?: string) {
     hospital_id: z.string(),
     insurer_id: z.string(),
     supplier_id: z.string(),
+    procedure_id: z.string().min(1, "Procedimento é obrigatório"),
     matricula: z.string(),
     guia_numero: z.string(),
-    procedimento: z.string().min(1, "Procedimento é obrigatório"),
     usa_opme: z.boolean(),
     ficha_de_sala: z.boolean(),
     status: z.string().min(1, "Status é obrigatório"),
@@ -199,6 +199,7 @@ export default function CaseFormPage() {
   const [hospitals, setHospitals] = useState<Reference[]>([]);
   const [insurers, setInsurers] = useState<Reference[]>([]);
   const [suppliers, setSuppliers] = useState<Reference[]>([]);
+  const [procedures, setProcedures] = useState<Reference[]>([]);
 
   const schema = useMemo(() => makeCaseSchema(currentStatus), [currentStatus]);
 
@@ -208,18 +209,20 @@ export default function CaseFormPage() {
   });
 
   const loadOptions = useCallback(async () => {
-    const [p, m, h, i, s] = await Promise.all([
+    const [p, m, h, i, s, pr] = await Promise.all([
       api.get<Patient[]>("/patients"),
       api.get<OrgMember[]>("/organizations/members"),
       api.get<Reference[]>("/hospitals"),
       api.get<Reference[]>("/insurers"),
       api.get<Reference[]>("/suppliers"),
+      api.get<Reference[]>("/procedures"),
     ]);
     setPatients(p);
     setMembers(m);
     setHospitals(h);
     setInsurers(i);
     setSuppliers(s);
+    setProcedures(pr);
   }, []);
 
   useEffect(() => {
@@ -237,9 +240,9 @@ export default function CaseFormPage() {
           hospital_id: c.hospital_id ?? "",
           insurer_id: c.insurer_id ?? "",
           supplier_id: c.supplier_id ?? "",
+          procedure_id: c.procedure_id,
           matricula: c.matricula ?? "",
           guia_numero: c.guia_numero ?? "",
-          procedimento: c.procedimento,
           usa_opme: c.usa_opme,
           ficha_de_sala: c.ficha_de_sala,
           status: c.status,
@@ -280,7 +283,7 @@ export default function CaseFormPage() {
     const out: Record<string, unknown> = {
       patient_id: v.patient_id,
       doctor_id: v.doctor_id,
-      procedimento: v.procedimento.trim(),
+      procedure_id: v.procedure_id,
       usa_opme: v.usa_opme,
       ficha_de_sala: v.ficha_de_sala,
       status: v.status,
@@ -330,6 +333,7 @@ export default function CaseFormPage() {
   const hospitalOptions = hospitals.map((h) => ({ value: h.id, label: h.name }));
   const insurerOptions = insurers.map((i) => ({ value: i.id, label: i.name }));
   const supplierOptions = suppliers.map((s) => ({ value: s.id, label: s.name }));
+  const procedureOptions = procedures.map((p) => ({ value: p.id, label: p.name }));
 
   return (
     <Form {...form}>
@@ -410,14 +414,17 @@ export default function CaseFormPage() {
               />
               <FormField
                 control={form.control}
-                name="procedimento"
+                name="procedure_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Procedimento *</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Ex: Reconstrução ligamentar"
-                        {...field}
+                      <Combobox
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={procedureOptions}
+                        placeholder="Selecione o procedimento"
+                        emptyText="Nenhum procedimento encontrado"
                       />
                     </FormControl>
                     <FormMessage />

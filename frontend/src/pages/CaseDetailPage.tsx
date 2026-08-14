@@ -132,7 +132,7 @@ export default function CaseDetailPage() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Caso — {row.procedimento}</CardTitle>
+          <CardTitle>Caso — {row.procedure?.name ?? "—"}</CardTitle>
           <CardAction>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => navigate(-1)}>

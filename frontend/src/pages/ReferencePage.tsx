@@ -48,6 +48,7 @@ const TABS = [
   { value: "hospitals", label: "Hospitais", endpoint: "/hospitals" },
   { value: "insurers", label: "Convênios", endpoint: "/insurers" },
   { value: "suppliers", label: "Fornecedores", endpoint: "/suppliers" },
+  { value: "procedures", label: "Procedimentos", endpoint: "/procedures" },
 ];
 
 function ReferenceTable({ endpoint }: { endpoint: string }) {

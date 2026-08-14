@@ -6,8 +6,8 @@ const router = Router();
 
 // Campos editáveis pelo cliente (nunca deixamos org_id/id virem do body)
 const EDITABLE_FIELDS = [
-  'patient_id', 'doctor_id', 'hospital_id', 'insurer_id', 'supplier_id',
-  'matricula', 'guia_numero', 'procedimento', 'usa_opme', 'ficha_de_sala', 'status',
+  'patient_id', 'doctor_id', 'hospital_id', 'insurer_id', 'supplier_id', 'procedure_id',
+  'matricula', 'guia_numero', 'usa_opme', 'ficha_de_sala', 'status',
   'data_solicitacao', 'data_autorizacao', 'data_agendamento', 'data_cirurgia',
   'entrada_cobranca', 'valor_cobranca', 'data_pagamento', 'data_recebimento',
   'valor_cirurgia', 'comissao_medico', 'receita_adicional', 'observacoes',
@@ -33,6 +33,7 @@ const ORG_SCOPED_REFERENCES: Record<string, string> = {
   hospital_id: 'hospitals',
   insurer_id: 'insurers',
   supplier_id: 'suppliers',
+  procedure_id: 'procedures',
 };
 
 async function validateOrgReferences(supabase: any, orgId: string, payload: Record<string, any>): Promise<string | null> {
@@ -52,6 +53,7 @@ const CASE_SELECT = `
   hospital:hospitals(id, name),
   insurer:insurers(id, name),
   supplier:suppliers(id, name),
+  procedure:procedures(id, name),
   doctor:org_members!surgery_cases_doctor_id_fkey(id, full_name)
 `;
 
@@ -66,21 +68,26 @@ router.get('/', async (req, res) => {
   if (from) query = query.gte('data_cirurgia', from);
   if (to) query = query.lte('data_cirurgia', to);
   if (search) {
-    // Busca por procedimento E por nome de paciente. Como não dá pra fazer
-    // isso num único query com join, primeiro achamos os patient_id cujo
-    // nome bate com o termo e depois filtramos por eles (ou só procedimento).
-    const { data: matchedPatients, error: patientError } = await r.supabase
-      .from('patients')
-      .select('id')
-      .eq('org_id', r.orgId)
-      .ilike('full_name', `%${search}%`);
-    if (patientError) return res.status(400).json({ error: patientError });
+    // Busca por nome de paciente E por nome de procedimento (via tabela de
+    // referência). Primeiro achamos os ids correspondentes e filtramos.
+    const [patientRes, procRes] = await Promise.all([
+      r.supabase.from('patients').select('id').eq('org_id', r.orgId).ilike('full_name', `%${search}%`),
+      r.supabase.from('procedures').select('id').eq('org_id', r.orgId).ilike('name', `%${search}%`),
+    ]);
+    if (patientRes.error) return res.status(400).json({ error: patientRes.error });
+    if (procRes.error) return res.status(400).json({ error: procRes.error });
 
-    const ids = (matchedPatients || []).map((p: any) => p.id);
-    if (ids.length > 0) {
-      query = query.or(`procedimento.ilike.%${search}%,patient_id.in.(${ids.join(',')})`);
+    const patientIds = (patientRes.data || []).map((p: any) => p.id);
+    const procIds = (procRes.data || []).map((p: any) => p.id);
+    const conditions: string[] = [];
+    if (patientIds.length > 0) conditions.push(`patient_id.in.(${patientIds.join(',')})`);
+    if (procIds.length > 0) conditions.push(`procedure_id.in.(${procIds.join(',')})`);
+
+    if (conditions.length > 0) {
+      query = query.or(conditions.join(','));
     } else {
-      query = query.ilike('procedimento', `%${search}%`);
+      // Nenhum paciente/procedimento casa: retorna vazio.
+      query = query.eq('id', '00000000-0000-0000-0000-000000000000');
     }
   }
 
