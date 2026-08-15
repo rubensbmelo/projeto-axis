@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Activity } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +34,12 @@ export default function LoginPage() {
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/inicio", { replace: true });
+        // "Retornar para a página pretendida": o router preserva a URL atual
+        // (ex: /casos/{id}/editar) enquanto a tela de login é exibida. Volta
+        // pra ela; só cai no Início se o usuário veio direto da raiz.
+        const from = location.pathname + location.search;
+        const hasIntent = from && from !== "/" && from !== "/login";
+        navigate(hasIntent ? from : "/inicio", { replace: true });
       } else {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
