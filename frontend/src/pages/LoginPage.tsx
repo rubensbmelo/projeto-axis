@@ -62,7 +62,7 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-xl">AXIS</CardTitle>
           <CardDescription className="max-w-64 text-balance">
-            Controle de cirurgias e OPME, do convênio ao recebimento.
+            Gestão financeira de cirurgias e OPME, do pedido ao recebimento.
           </CardDescription>
         </CardHeader>
         <CardContent>
