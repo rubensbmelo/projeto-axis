@@ -167,6 +167,14 @@ perder o fio de qual ferramenta corrigiu o quê.
       precisa ser conferida; em `surgery_cases`, usar o relacionamento
       `procedure:procedures(name)` em vez da coluna antiga `procedimento`.
 - [x] Magic bytes no upload (`documents.ts`) além de MIME/extensão.
+- [x] **Corrigido o Combobox** que não abria no form de caso (paciente,
+      médico, procedimento, hospital, convênio, fornecedor): a causa era o
+      trigger `<PopoverTrigger asChild><Button>` do shadcn v4 — o `Button`
+      é um `Slot` interno, e o `Slot` aninhado no `asChild` não repassava a
+      ref/evento ao Radix (dropdown nunca abria, sem erro de console).
+      Fix: trigger virou `<button>` nativo com `buttonVariants`
+      (`4fd2af4`); também removidas animações/`overflow-hidden` do
+      `PopoverContent` (`faa3d45`). Confirmado ao vivo em produção.
 - [x] Hardening dos containers: backend roda como usuário `node`
       (não-root), `cap_drop: ALL` + `no-new-privileges` no compose.
 
@@ -178,11 +186,6 @@ perder o fio de qual ferramenta corrigiu o quê.
       não na lista de casos — é o "chamariz" comercial do produto, precisa
       ser a primeira coisa que o médico vê. (Combinado em conversa, ainda
       não implementado nessa sessão: hoje `/` redireciona para `/casos`.)
-- [ ] **BUG em investigação**: campos de seleção (Combobox de paciente,
-      médico, procedimento, hospital, convênio, fornecedor) não abrem na
-      tela "Novo caso" (`/casos/novo`). Sem erro de console, sem falha de
-      rede — suspeita de bug de CSS/z-index no Popover ou de estado do
-      componente. Investigação em andamento.
 - [ ] **Ajuste de linguagem "clínica" → "consultório"/"espaço de trabalho"**
       em todo o app (produto é centrado no médico, não numa clínica fixa).
       Estado: frontend já aplicado (Onboarding, Login, Patients, Reports);
