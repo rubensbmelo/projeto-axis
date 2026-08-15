@@ -15,6 +15,7 @@ import ReferencePage from "@/pages/ReferencePage";
 import ReportsPage from "@/pages/ReportsPage";
 import MembersPage from "@/pages/MembersPage";
 import InicioPage from "@/pages/InicioPage";
+import PatientDetailPage from "@/pages/PatientDetailPage";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -93,6 +94,7 @@ export default function App() {
           <Route path="/casos/:id" element={<CaseDetailPage />} />
           <Route path="/casos/:id/editar" element={<CaseFormPage />} />
           <Route path="/pacientes" element={<PatientsPage />} />
+          <Route path="/pacientes/:id" element={<PatientDetailPage />} />
           <Route path="/cadastros" element={<ReferencePage />} />
           <Route path="/relatorios" element={<ReportsPage />} />
           <Route path="/membros" element={<MembersPage />} />

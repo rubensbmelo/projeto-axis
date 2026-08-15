@@ -61,7 +61,7 @@ const CASE_SELECT = `
 // GET /api/cases — lista com filtros opcionais
 router.get('/', async (req, res) => {
   const r = req as unknown as AuthedRequest;
-  const { status, doctor_id, from, to, search, alert, hospital_id, insurer_id, supplier_id } = req.query as Record<string, string>;
+  const { status, doctor_id, patient_id, from, to, search, alert, hospital_id, insurer_id, supplier_id } = req.query as Record<string, string>;
   const parsedPage = Number.parseInt(req.query.page as string, 10);
   const parsedPageSize = Number.parseInt(req.query.pageSize as string, 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
@@ -71,6 +71,7 @@ router.get('/', async (req, res) => {
   if (r.orgRole === 'doctor') query = query.eq('doctor_id', r.orgMemberId);
   if (status) query = query.eq('status', status);
   if (doctor_id) query = query.eq('doctor_id', doctor_id);
+  if (patient_id) query = query.eq('patient_id', patient_id);
   if (from) query = query.gte('data_cirurgia', from);
   if (to) query = query.lte('data_cirurgia', to);
   if (hospital_id) query = query.eq('hospital_id', hospital_id);

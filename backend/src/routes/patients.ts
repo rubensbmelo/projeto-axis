@@ -42,6 +42,13 @@ function similarName(a: string, b: string): boolean {
   return 1 - distance / Math.max(left.length, right.length) >= 0.85;
 }
 
+function cpfVariants(value?: string): string[] {
+  if (!value) return [];
+  const digits = value.replace(/\D/g, '');
+  if (digits.length !== 11) return [value];
+  return [digits, `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`];
+}
+
 router.get('/', async (req, res) => {
   const r = req as unknown as AuthedRequest;
   const search = (req.query.search as string) || '';
@@ -105,11 +112,32 @@ router.post('/', canWrite, async (req, res) => {
   if (!parsed.ok) return res.status(400).json({ error: parsed.error });
 
   const { full_name, cpf, birth_date, phone, address } = parsed.value;
-  const { data: existingPatients, error: duplicateQueryError } = await r.supabase
+  // Busca apenas candidatos indexáveis. A similaridade final continua em JS,
+  // mas não carregamos toda a base da organização para cada cadastro.
+  const nameTokens = full_name.split(/\s+/).map((token) => token.replace(/[%_]/g, '')).filter((token) => token.length >= 3);
+  const nameCandidates = nameTokens.length > 0
+    ? nameTokens.map((token) => r.supabase
+      .from('patients')
+      .select('id, full_name, cpf')
+      .eq('org_id', r.orgId)
+      .ilike('full_name', `%${token}%`))
+    : [r.supabase
+      .from('patients')
+      .select('id, full_name, cpf')
+      .eq('org_id', r.orgId)
+      .ilike('full_name', `%${full_name}%`)];
+  const cpfCandidates = cpfVariants(cpf).map((variant) => r.supabase
     .from('patients')
     .select('id, full_name, cpf')
-    .eq('org_id', r.orgId);
+    .eq('org_id', r.orgId)
+    .eq('cpf', variant));
+  const candidateResults = await Promise.all([...nameCandidates, ...cpfCandidates]);
+  const duplicateQueryError = candidateResults.find((result) => result.error)?.error;
   if (duplicateQueryError) return res.status(400).json({ error: duplicateQueryError });
+
+  const existingPatients = Array.from(new Map(
+    candidateResults.flatMap((result) => result.data || []).map((patient: any) => [patient.id, patient])
+  ).values());
 
   const normalizedCpf = cpf ? cpf.replace(/\D/g, '') : '';
   const matches = (existingPatients || []).filter((patient: any) => {
