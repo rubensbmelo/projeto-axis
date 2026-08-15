@@ -36,9 +36,10 @@ export default function LoginPage() {
         if (error) throw error;
         // "Retornar para a página pretendida": o router preserva a URL atual
         // (ex: /casos/{id}/editar) enquanto a tela de login é exibida. Volta
-        // pra ela; só cai no Início se o usuário veio direto da raiz.
+        // pra ela — exceto telas de CRIAÇÃO ("/novo"), onde voltar é inútil
+        // (form em branco); nesses casos cai no Início.
         const from = location.pathname + location.search;
-        const hasIntent = from && from !== "/" && from !== "/login";
+        const hasIntent = from && from !== "/" && from !== "/login" && !from.endsWith("/novo");
         navigate(hasIntent ? from : "/inicio", { replace: true });
       } else {
         const { error } = await supabase.auth.signUp({ email, password });
