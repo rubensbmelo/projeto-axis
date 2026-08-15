@@ -14,3 +14,6 @@ Planilha*.xlsx
 node_modules
 dist
 *.log
+
+# Vite dev temp files
+*.ts.timestamp-*.mjs

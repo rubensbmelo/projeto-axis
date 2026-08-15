@@ -199,7 +199,7 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="min-h-56 border-primary/20 py-6 lg:row-span-2">
           <CardHeader className="px-6">
-            <CardTitle className="text-[17px] font-normal text-balance">Comissão do mês</CardTitle>
+            <CardTitle className="text-[17px] font-normal text-balance">Comissão recebida</CardTitle>
             <p className="text-[13px] text-muted-foreground text-balance">Recebimentos registrados neste mês</p>
           </CardHeader>
           <CardContent className="mt-auto px-6">

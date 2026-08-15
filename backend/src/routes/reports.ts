@@ -114,7 +114,9 @@ router.get('/summary', async (req, res) => {
     .map(([label, total]) => ({ label, total }))
     .sort((a, b) => b.total - a.total);
 
-  // Comissão do mês corrente (por data_cirurgia) — destaque do painel do médico.
+  // Comissão RECEBIDA no mês corrente (por data_recebimento) — dinheiro que
+  // efetivamente entrou neste mês, não comissão de cirurgia feita no mês
+  // (o ciclo de autorização/cobrança do convênio pode pagar meses depois).
   const now = new Date();
   const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const { data: commMonth, error: commMonthError } = await scopedCases(
@@ -122,8 +124,9 @@ router.get('/summary', async (req, res) => {
     r.supabase
     .from('surgery_cases')
     .select('comissao_medico')
-    .gte('data_cirurgia', `${month}-01`)
-    .lte('data_cirurgia', `${month}-31`)
+    .not('data_recebimento', 'is', null)
+    .gte('data_recebimento', `${month}-01`)
+    .lte('data_recebimento', `${month}-31`)
   );
   if (commMonthError) return res.status(400).json({ error: commMonthError });
   const comissao_do_mes = (commMonth || []).reduce((s: number, row: any) => s + (Number(row.comissao_medico) || 0), 0);

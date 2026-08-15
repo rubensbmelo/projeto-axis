@@ -1,15 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { toast } from "sonner";
 
 import { api } from "@/api/client";
@@ -44,7 +35,7 @@ function RankingCard({ title, data }: { title: string; data: { label: string; co
         {data.length === 0 ? (
           <p className="py-3 text-sm text-muted-foreground">Sem dados.</p>
         ) : (
-          data.slice(0, 5).map((item, index) => (
+          data.slice(0, 3).map((item, index) => (
             <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
               <div className="flex min-w-0 items-center gap-2">
                 <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-muted-foreground">
@@ -85,6 +76,9 @@ export default function InicioPage() {
   if (!summary) return <p className="text-muted-foreground">Nenhum dado disponível.</p>;
 
   const name = user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "médico";
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const surgeriesThisMonth = summary.cirurgias_por_mes.find((item) => item.month === currentMonth)?.count ?? 0;
   const alertItems = [
     {
       key: "authorization",
@@ -146,10 +140,10 @@ export default function InicioPage() {
         )}
       </section>
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1.15fr_2fr]" aria-label="Resumo financeiro">
-        <Card className="border-primary/20 bg-primary/[0.03] py-6">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2" aria-label="Destaques do mês">
+        <Card className="border-primary/20 bg-primary/[0.03] py-7">
           <CardHeader className="px-6">
-            <CardTitle className="text-[17px] font-normal">Comissão do mês</CardTitle>
+            <CardTitle className="text-[17px] font-normal">Comissão recebida</CardTitle>
             <p className="text-[13px] text-muted-foreground">Recebimentos registrados neste mês</p>
           </CardHeader>
           <CardContent className="px-6">
@@ -158,56 +152,25 @@ export default function InicioPage() {
             </p>
           </CardContent>
         </Card>
-        <div className="grid grid-cols-2 gap-4">
-          <Card size="sm" className="py-5">
-            <CardHeader className="px-5"><CardTitle className="text-[13px] font-normal text-muted-foreground">Total de casos</CardTitle></CardHeader>
-            <CardContent className="px-5"><p className="font-heading text-[28px] font-semibold tracking-[-0.03em]">{summary.total_casos}</p></CardContent>
-          </Card>
-          <Card size="sm" className="py-5">
-            <CardHeader className="px-5"><CardTitle className="text-[13px] font-normal text-muted-foreground">Cirurgias realizadas</CardTitle></CardHeader>
-            <CardContent className="px-5"><p className="font-heading text-[28px] font-semibold tracking-[-0.03em]">{summary.cirurgias_realizadas}</p></CardContent>
-          </Card>
-          <Card size="sm" className="py-5">
-            <CardHeader className="px-5"><CardTitle className="text-[13px] font-normal text-muted-foreground">Valor faturado</CardTitle></CardHeader>
-            <CardContent className="px-5"><p className="font-heading text-xl font-semibold tracking-[-0.03em]">{money(summary.valor_total_faturado)}</p></CardContent>
-          </Card>
-          <Card size="sm" className="py-5">
-            <CardHeader className="px-5"><CardTitle className="text-[13px] font-normal text-muted-foreground">Já recebido</CardTitle></CardHeader>
-            <CardContent className="px-5"><p className="font-heading text-xl font-semibold tracking-[-0.03em]">{money(summary.valor_total_recebido)}</p></CardContent>
-          </Card>
-        </div>
+        <Card className="py-7">
+          <CardHeader className="px-6">
+            <CardTitle className="text-[17px] font-normal">Cirurgias realizadas no mês</CardTitle>
+            <p className="text-[13px] text-muted-foreground">Procedimentos concluídos neste mês</p>
+          </CardHeader>
+          <CardContent className="px-6">
+            <p className="font-heading text-[40px] leading-none font-semibold tracking-[-0.04em] tabular-nums">
+              {surgeriesThisMonth}
+            </p>
+          </CardContent>
+        </Card>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2" aria-label="Rankings">
+      <section className="grid grid-cols-1 gap-5 sm:grid-cols-2" aria-label="Rankings">
         <RankingCard title="Melhores hospitais" data={summary.por_hospital} />
         <RankingCard title="Melhores convênios" data={summary.por_convenio} />
         <RankingCard title="Melhores fornecedores" data={summary.por_fornecedor} />
         <RankingCard title="Melhores procedimentos" data={summary.por_procedimento} />
       </section>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Faturamento mensal</CardTitle>
-          <p className="text-xs text-muted-foreground">Valor de cobranças faturadas nos últimos 6 meses.</p>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={summary.faturamento_por_mes} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
-                <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} tickFormatter={(value: number) => `R$ ${(value / 1000).toFixed(0)}k`} width={48} />
-                <Tooltip
-                  cursor={{ fill: "var(--muted)" }}
-                  formatter={(value) => [money(Number(value) || 0), "Faturado"]}
-                  labelFormatter={(label) => `Mês ${label}`}
-                />
-                <Bar dataKey="valor" fill="var(--primary)" radius={[4, 4, 0, 0]} maxBarSize={42} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
