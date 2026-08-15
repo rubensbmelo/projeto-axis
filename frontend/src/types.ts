@@ -41,6 +41,12 @@ export interface Reference {
   name: string;
 }
 
+export interface ReferenceSummary {
+  reference: Reference;
+  total_casos: number;
+  valor_total_faturado: number;
+}
+
 export interface CaseRow {
   id: string;
   org_id: string;

@@ -9,6 +9,7 @@ const canWrite = requireRole('owner', 'doctor', 'secretary') as any;
 // GET é liberado pra qualquer membro (inclusive viewer); escrita não.
 export function referenceTableRouter(tableName: string) {
   const router = Router();
+  const caseField = `${tableName.slice(0, -1)}_id`;
 
   router.get('/', async (req, res) => {
     const r = req as unknown as AuthedRequest;
@@ -19,6 +20,45 @@ export function referenceTableRouter(tableName: string) {
       .order('name', { ascending: true });
     if (error) return res.status(400).json({ error });
     res.json(data || []);
+  });
+
+  router.get('/:id/summary', async (req, res) => {
+    const r = req as unknown as AuthedRequest;
+    const { data: reference, error: referenceError } = await r.supabase
+      .from(tableName)
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('org_id', r.orgId)
+      .single();
+    if (referenceError) return res.status(404).json({ error: referenceError });
+
+    let casesQuery = r.supabase
+      .from('surgery_cases')
+      .select('status, valor_cobranca')
+      .eq('org_id', r.orgId)
+      .eq(caseField, req.params.id);
+    if (r.orgRole === 'doctor') casesQuery = casesQuery.eq('doctor_id', r.orgMemberId);
+    const { data: cases, error: casesError } = await casesQuery;
+    if (casesError) return res.status(400).json({ error: casesError });
+
+    const rows = cases || [];
+    const valor_total_faturado = rows
+      .filter((row: any) => ['faturado', 'pago'].includes(row.status))
+      .reduce((sum: number, row: any) => sum + (Number(row.valor_cobranca) || 0), 0);
+
+    res.json({ reference, total_casos: rows.length, valor_total_faturado });
+  });
+
+  router.get('/:id', async (req, res) => {
+    const r = req as unknown as AuthedRequest;
+    const { data, error } = await r.supabase
+      .from(tableName)
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('org_id', r.orgId)
+      .single();
+    if (error) return res.status(404).json({ error });
+    res.json(data);
   });
 
   router.post('/', canWrite, async (req, res) => {

@@ -16,6 +16,7 @@ import ReportsPage from "@/pages/ReportsPage";
 import MembersPage from "@/pages/MembersPage";
 import InicioPage from "@/pages/InicioPage";
 import PatientDetailPage from "@/pages/PatientDetailPage";
+import EntityFichaPage from "@/pages/EntityFichaPage";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -96,6 +97,7 @@ export default function App() {
           <Route path="/pacientes" element={<PatientsPage />} />
           <Route path="/pacientes/:id" element={<PatientDetailPage />} />
           <Route path="/cadastros" element={<ReferencePage />} />
+          <Route path="/cadastros/:type/:id" element={<EntityFichaPage />} />
           <Route path="/relatorios" element={<ReportsPage />} />
           <Route path="/membros" element={<MembersPage />} />
           <Route path="*" element={<Navigate to="/inicio" replace />} />

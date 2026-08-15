@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,13 +46,15 @@ function LoadingRows({ cols }: { cols: number }) {
 }
 
 const TABS = [
-  { value: "hospitals", label: "Hospitais", endpoint: "/hospitals" },
-  { value: "insurers", label: "Convênios", endpoint: "/insurers" },
-  { value: "suppliers", label: "Fornecedores", endpoint: "/suppliers" },
-  { value: "procedures", label: "Procedimentos", endpoint: "/procedures" },
+  { value: "hospitals", label: "Hospitais", endpoint: "/hospitals", entityLabel: "Hospital" },
+  { value: "insurers", label: "Convênios", endpoint: "/insurers", entityLabel: "Convênio" },
+  { value: "suppliers", label: "Fornecedores", endpoint: "/suppliers", entityLabel: "Fornecedor" },
+  { value: "procedures", label: "Procedimentos", endpoint: "/procedures", entityLabel: "Procedimento" },
 ];
 
-function ReferenceTable({ endpoint }: { endpoint: string }) {
+function ReferenceTable({ endpoint, entityType, entityLabel }: { endpoint: string; entityType: string; entityLabel: string }) {
+  const navigate = useNavigate();
+  const fichaEnabled = entityType !== "procedures";
   const [rows, setRows] = useState<Reference[]>([]);
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -82,9 +85,9 @@ function ReferenceTable({ endpoint }: { endpoint: string }) {
     setDialogOpen(true);
   };
 
-  const openEdit = (r: Reference) => {
-    setEditing(r);
-    setName(r.name);
+  const openEdit = (reference: Reference) => {
+    setEditing(reference);
+    setName(reference.name);
     setDialogOpen(true);
   };
 
@@ -95,11 +98,8 @@ function ReferenceTable({ endpoint }: { endpoint: string }) {
     }
     setSaving(true);
     try {
-      if (editing) {
-        await api.put(`${endpoint}/${editing.id}`, { name: name.trim() });
-      } else {
-        await api.post(endpoint, { name: name.trim() });
-      }
+      if (editing) await api.put(`${endpoint}/${editing.id}`, { name: name.trim() });
+      else await api.post(endpoint, { name: name.trim() });
       toast.success("Salvo");
       setDialogOpen(false);
       load();
@@ -151,7 +151,7 @@ function ReferenceTable({ endpoint }: { endpoint: string }) {
               </TableRow>
             ) : (
               rows.map((r) => (
-                <TableRow key={r.id}>
+                <TableRow key={r.id} className={fichaEnabled ? "cursor-pointer hover:bg-muted/50" : undefined} onClick={() => fichaEnabled && navigate(`/cadastros/${entityType}/${r.id}`)}>
                   <TableCell>{r.name}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
@@ -160,7 +160,11 @@ function ReferenceTable({ endpoint }: { endpoint: string }) {
                         size="sm"
                         aria-label={`Editar ${r.name}`}
                         title="Editar"
-                        onClick={() => openEdit(r)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (fichaEnabled) navigate(`/cadastros/${entityType}/${r.id}`);
+                            else openEdit(r);
+                          }}
                       >
                         <Pencil className="size-4" />
                       </Button>
@@ -170,7 +174,10 @@ function ReferenceTable({ endpoint }: { endpoint: string }) {
                         className="text-destructive hover:text-destructive"
                         aria-label={`Excluir ${r.name}`}
                         title="Excluir"
-                        onClick={() => setToDelete(r)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setToDelete(r);
+                        }}
                       >
                         <Trash2 className="size-4" />
                       </Button>
@@ -186,7 +193,7 @@ function ReferenceTable({ endpoint }: { endpoint: string }) {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editing ? "Editar" : "Novo"}</DialogTitle>
+            <DialogTitle>{editing ? `Editar ${entityLabel.toLowerCase()}` : `Novo ${entityLabel.toLowerCase()}`}</DialogTitle>
             <DialogDescription>Nome de exibição.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
@@ -244,7 +251,7 @@ export default function ReferencePage() {
           </TabsList>
           {TABS.map((t) => (
             <TabsContent key={t.value} value={t.value}>
-              <ReferenceTable endpoint={t.endpoint} />
+              <ReferenceTable endpoint={t.endpoint} entityType={t.value} entityLabel={t.entityLabel ?? t.label.slice(0, -1)} />
             </TabsContent>
           ))}
         </Tabs>
