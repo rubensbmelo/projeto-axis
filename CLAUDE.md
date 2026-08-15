@@ -190,11 +190,12 @@ perder o fio de qual ferramenta corrigiu o quê.
       em todo o app (produto é centrado no médico, não numa clínica fixa).
       Estado: frontend já aplicado (Onboarding, Login, Patients, Reports);
       falta conferir mensagens do backend (ainda usam "organização") e docs.
-- [ ] **Otimizar a detecção de pacientes duplicados em organizações grandes**:
-      hoje o POST de pacientes carrega os pacientes da organização e compara
-      nomes/CPFs em JavaScript. É adequado para uma clínica pequena, mas deve
-      migrar para pré-filtragem/indexação no banco (especialmente CPF) quando
-      o volume chegar a milhares de pacientes.
+- [x] **Otimizar a detecção de pacientes duplicados em organizações grandes**:
+      o POST de pacientes agora pré-filtra candidatos por tokens do nome e
+      variantes do CPF, usando os índices da migration `007_patient_duplicate_indexes.sql`,
+      e só compara similaridade em JavaScript sobre esse subconjunto. Ainda
+      vale monitorar volume e ajustar a estratégia se uma organização chegar
+      a dezenas de milhares de pacientes.
 
 ## Próximo passo sugerido
 
