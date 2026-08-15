@@ -122,6 +122,18 @@ export interface ReportSummary {
 export interface ReportAlerts {
   authorization: { count: number };
   billing: { count: number };
+  valor_abaixo_historico: {
+    count: number;
+    cases: {
+      id: string;
+      procedure_id: string;
+      insurer_id: string;
+      valor_cobranca: number;
+      media_historica: number;
+      procedure?: { name: string } | null;
+      insurer?: { name: string } | null;
+    }[];
+  };
 }
 
 export interface AuditEntry {

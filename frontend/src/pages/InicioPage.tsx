@@ -79,6 +79,10 @@ export default function InicioPage() {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const surgeriesThisMonth = summary.cirurgias_por_mes.find((item) => item.month === currentMonth)?.count ?? 0;
+  const valueAlert = alerts?.valor_abaixo_historico;
+  const valueAlertDescription = valueAlert?.cases.length === 1
+    ? `Esperado ~${money(valueAlert.cases[0].media_historica)}; cobrado ${money(valueAlert.cases[0].valor_cobranca)}.`
+    : "Casos cobrados pelo menos 20% abaixo da média histórica.";
   const alertItems = [
     {
       key: "authorization",
@@ -92,6 +96,14 @@ export default function InicioPage() {
       description: "Cobranças faturadas há mais de 30 dias sem recebimento.",
       count: alerts?.billing.count ?? 0,
     },
+    ...(alerts?.valor_abaixo_historico.count
+      ? [{
+          key: "value_below_historical",
+          title: "Valor abaixo do histórico",
+          description: valueAlertDescription,
+          count: alerts.valor_abaixo_historico.count,
+        }]
+      : []),
   ];
 
   return (

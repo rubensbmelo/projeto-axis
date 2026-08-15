@@ -1,4 +1,13 @@
-export type CaseAlertType = 'authorization' | 'billing';
+export type CaseAlertType = 'authorization' | 'billing' | 'value_below_historical';
+
+export interface ValueBelowHistoricalCase {
+  id: string;
+  procedure_id: string;
+  insurer_id: string;
+  valor_cobranca: number;
+  media_historica: number;
+  [key: string]: any;
+}
 
 function parseDate(value: string | null | undefined): Date | null {
   if (!value) return null;
@@ -37,12 +46,54 @@ export function matchesCaseAlert(row: any, type: CaseAlertType, now = new Date()
       && elapsedBusinessDays(row.data_solicitacao, now) > 21;
   }
 
-  return row.status === 'faturado'
+  if (type === 'billing') {
+    return row.status === 'faturado'
     && !!row.entrada_cobranca
     && !row.data_recebimento
     && elapsedCalendarDays(row.entrada_cobranca, now) > 30;
+  }
+
+  return false;
 }
 
 export function filterCasesByAlert(rows: any[], type: CaseAlertType, now = new Date()): any[] {
+  if (type === 'value_below_historical') return findValueBelowHistorical(rows);
   return rows.filter((row) => matchesCaseAlert(row, type, now));
+}
+
+export function findValueBelowHistorical(rows: any[]): ValueBelowHistoricalCase[] {
+  const eligible = rows.filter((row) => (
+    ['faturado', 'pago'].includes(row.status)
+    && row.procedure_id
+    && row.insurer_id
+    && row.valor_cobranca !== null
+    && row.valor_cobranca !== undefined
+    && Number.isFinite(Number(row.valor_cobranca))
+  ));
+
+  const groups = new Map<string, any[]>();
+  for (const row of eligible) {
+    const key = `${row.procedure_id}:${row.insurer_id}`;
+    const group = groups.get(key) || [];
+    group.push(row);
+    groups.set(key, group);
+  }
+
+  const alerts: ValueBelowHistoricalCase[] = [];
+  for (const current of eligible) {
+    const key = `${current.procedure_id}:${current.insurer_id}`;
+    const history = (groups.get(key) || []).filter((row) => row.id !== current.id);
+    if (history.length < 5) continue;
+
+    const average = history.reduce((sum, row) => sum + Number(row.valor_cobranca), 0) / history.length;
+    if (Number(current.valor_cobranca) <= average * 0.8) {
+      alerts.push({
+        ...current,
+        valor_cobranca: Number(current.valor_cobranca),
+        media_historica: average,
+      });
+    }
+  }
+
+  return alerts;
 }

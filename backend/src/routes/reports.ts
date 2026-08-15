@@ -189,16 +189,21 @@ router.get('/alerts', async (req, res) => {
   const r = req as unknown as AuthedRequest;
   const { data, error } = await scopedCases(
     r,
-    r.supabase.from('surgery_cases').select('id, status, doctor_id, data_solicitacao, data_autorizacao, entrada_cobranca, data_recebimento')
+    r.supabase.from('surgery_cases').select('id, status, doctor_id, data_solicitacao, data_autorizacao, entrada_cobranca, data_recebimento, procedure_id, insurer_id, valor_cobranca, procedure:procedures(name), insurer:insurers(name)')
   );
   if (error) return res.status(400).json({ error });
 
   const rows = data || [];
   const authorization = filterCasesByAlert(rows, 'authorization');
   const billing = filterCasesByAlert(rows, 'billing');
+  const valueBelowHistorical = filterCasesByAlert(rows, 'value_below_historical');
   res.json({
     authorization: { count: authorization.length },
     billing: { count: billing.length },
+    valor_abaixo_historico: {
+      count: valueBelowHistorical.length,
+      cases: valueBelowHistorical,
+    },
   });
 });
 

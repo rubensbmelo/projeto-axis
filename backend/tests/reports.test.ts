@@ -1,11 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { authHeaders, createPatient, createProcedure, http, setupOrg, teardownOrg, type TestCtx } from './helpers';
+import { authHeaders, createInsurer, createPatient, createProcedure, http, setupOrg, teardownOrg, type TestCtx } from './helpers';
 
 describe('relatórios', () => {
   let ctx: TestCtx;
   let patientId: string;
   let procedureId: string;
+  let insurerId: string;
 
   const daysAgo = (days: number) => {
     const date = new Date();
@@ -17,6 +18,7 @@ describe('relatórios', () => {
     ctx = await setupOrg('Reports');
     patientId = await createPatient(ctx.owner.token, ctx.orgId, 'Paciente Reports');
     procedureId = await createProcedure(ctx.owner.token, ctx.orgId, 'Procedimento Reports');
+    insurerId = await createInsurer(ctx.owner.token, ctx.orgId, 'Convênio Reports');
 
     const created = await http()
       .post('/api/cases')
@@ -43,6 +45,36 @@ describe('relatórios', () => {
         valor_cobranca: 500,
       });
     expect(mismatched.status).toBe(201);
+
+    for (let i = 0; i < 5; i += 1) {
+      const historical = await http()
+        .post('/api/cases')
+        .set(authHeaders(ctx.owner.token, ctx.orgId))
+        .send({
+          patient_id: patientId,
+          doctor_id: ctx.ownerMemberId,
+          procedure_id: procedureId,
+          insurer_id: insurerId,
+          status: 'faturado',
+          valor_cobranca: 1000,
+          data_recebimento: daysAgo(1),
+        });
+      expect(historical.status).toBe(201);
+    }
+
+    const belowHistorical = await http()
+      .post('/api/cases')
+      .set(authHeaders(ctx.owner.token, ctx.orgId))
+      .send({
+        patient_id: patientId,
+        doctor_id: ctx.ownerMemberId,
+        procedure_id: procedureId,
+        insurer_id: insurerId,
+        status: 'faturado',
+        valor_cobranca: 700,
+        data_recebimento: daysAgo(1),
+      });
+    expect(belowHistorical.status).toBe(201);
   });
 
   afterAll(async () => {
@@ -68,6 +100,9 @@ describe('relatórios', () => {
     expect(alerts.status).toBe(200);
     expect(alerts.body.authorization.count).toBe(1);
     expect(alerts.body.billing.count).toBe(1);
+    expect(alerts.body.valor_abaixo_historico.count).toBe(1);
+    expect(alerts.body.valor_abaixo_historico.cases[0].valor_cobranca).toBe(700);
+    expect(alerts.body.valor_abaixo_historico.cases[0].media_historica).toBe(1000);
     expect(summary.status).toBe(200);
     expect(summary.body.faturamento_por_mes).toHaveLength(6);
     expect(summary.body.faturamento_por_mes.some((month: any) => month.valor === 1000)).toBe(true);

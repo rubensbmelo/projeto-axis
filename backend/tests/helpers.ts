@@ -129,3 +129,12 @@ export async function createProcedure(token: string, orgId: string, name: string
   if (res.status !== 201) throw new Error(`criar procedimento falhou: ${res.status} ${JSON.stringify(res.body)}`);
   return res.body.id;
 }
+
+export async function createInsurer(token: string, orgId: string, name: string): Promise<string> {
+  const res = await http()
+    .post('/api/insurers')
+    .set(authHeaders(token, orgId))
+    .send({ name });
+  if (res.status !== 201) throw new Error(`criar convênio falhou: ${res.status} ${JSON.stringify(res.body)}`);
+  return res.body.id;
+}

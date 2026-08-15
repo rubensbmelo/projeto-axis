@@ -95,7 +95,7 @@ router.get('/', async (req, res) => {
 
   const { data: queriedData, error } = await query.order('created_at', { ascending: false });
   if (error) return res.status(400).json({ error });
-  if (alert && !['authorization', 'billing'].includes(alert)) {
+  if (alert && !['authorization', 'billing', 'value_below_historical'].includes(alert)) {
     return res.status(400).json({ error: 'Alerta inválido' });
   }
   const data = alert ? filterCasesByAlert(queriedData || [], alert as CaseAlertType) : queriedData || [];

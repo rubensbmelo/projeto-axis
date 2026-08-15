@@ -132,6 +132,10 @@ export default function ReportsPage() {
     label: month,
     count,
   }));
+  const valueAlert = alerts?.valor_abaixo_historico;
+  const valueAlertDescription = valueAlert?.cases.length === 1
+    ? `Esperado ~R$ ${valueAlert.cases[0].media_historica.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}; cobrado R$ ${valueAlert.cases[0].valor_cobranca.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`
+    : "Casos cobrados pelo menos 20% abaixo da média histórica.";
 
   const alertItems = [
     {
@@ -146,6 +150,14 @@ export default function ReportsPage() {
       description: "Cobranças faturadas há mais de 30 dias sem recebimento.",
       count: alerts?.billing.count ?? 0,
     },
+    ...(alerts?.valor_abaixo_historico.count
+      ? [{
+          key: "value_below_historical",
+          title: "Valor abaixo do histórico",
+          description: valueAlertDescription,
+          count: alerts.valor_abaixo_historico.count,
+        }]
+      : []),
   ];
 
   return (
