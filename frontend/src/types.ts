@@ -66,6 +66,13 @@ export interface CaseRow {
   doctor?: { id: string; full_name: string } | null;
 }
 
+export interface PaginatedCases {
+  data: CaseRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface CasePayload {
   patient_id: string;
   doctor_id: string;

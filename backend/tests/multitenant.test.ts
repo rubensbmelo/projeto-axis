@@ -85,8 +85,8 @@ describe('isolamento multi-tenant', () => {
   it('consulta com usuário de outra org não vê casos alheios', async () => {
     const listB = await http().get('/api/cases').set(authHeaders(userB.token, orgB.orgId));
     const listA = await http().get('/api/cases').set(authHeaders(orgA.owner.token, orgA.orgId));
-    const idsB = new Set((listB.body as any[]).map((c) => c.id));
-    const idsA = new Set((listA.body as any[]).map((c) => c.id));
+    const idsB = new Set(listB.body.data.map((c: any) => c.id));
+    const idsA = new Set(listA.body.data.map((c: any) => c.id));
     for (const idB of idsB) expect(idsA.has(idB)).toBe(false);
   });
 });

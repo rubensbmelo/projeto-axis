@@ -4,7 +4,7 @@ import { Eye, Funnel, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { api } from "@/api/client";
-import type { CaseRow, Reference } from "@/types";
+import type { CaseRow, PaginatedCases, Reference } from "@/types";
 import { useCachedFetch } from "@/lib/swr";
 import { PAYMENT_STATUS_BADGE, STATUS_OPTIONS, paymentStatus, paymentStatusLabel, statusLabel } from "@/lib/status";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +59,30 @@ function LoadingRows({ cols }: { cols: number }) {
   );
 }
 
+function PaginationControls({
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="flex items-center justify-between gap-3 border-t pt-4">
+      <Button variant="outline" size="sm" disabled={page === 1} onClick={() => onPageChange(page - 1)}>
+        Anterior
+      </Button>
+      <span className="text-sm text-muted-foreground">Página {page} de {totalPages}</span>
+      <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => onPageChange(page + 1)}>
+        Próxima
+      </Button>
+    </div>
+  );
+}
+
 export default function CasesPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -71,6 +95,7 @@ export default function CasesPage() {
   const [supplierId, setSupplierId] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [page, setPage] = useState(1);
   const [toDelete, setToDelete] = useState<CaseRow | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -94,14 +119,17 @@ export default function CasesPage() {
     if (supplierId) params.set("supplier_id", supplierId);
     if (from) params.set("from", from);
     if (to) params.set("to", to);
+    params.set("page", String(page));
+    params.set("pageSize", "25");
     const qs = params.toString();
     return `/cases${qs ? "?" + qs : ""}`;
-  }, [status, debouncedSearch, alert, hospitalId, insurerId, supplierId, from, to]);
+  }, [status, debouncedSearch, alert, hospitalId, insurerId, supplierId, from, to, page]);
 
   // Stale-while-revalidate: ao voltar de aba/janela (reload do navegador),
   // a lista em cache aparece na hora — sem skeleton.
-  const { data: rowsData, loading, refetch } = useCachedFetch<CaseRow[]>(listUrl);
-  const rows = rowsData ?? [];
+  const { data: rowsData, loading, refetch } = useCachedFetch<PaginatedCases>(listUrl);
+  const rows = rowsData?.data ?? [];
+  const totalPages = Math.max(1, Math.ceil((rowsData?.total ?? 0) / 25));
   const activeFilterCount = [hospitalId, insurerId, supplierId, from || to].filter(Boolean).length;
 
   const clearFilters = () => {
@@ -111,6 +139,14 @@ export default function CasesPage() {
     setFrom("");
     setTo("");
   };
+
+  useEffect(() => {
+    setPage(1);
+  }, [status, debouncedSearch, alert, hospitalId, insurerId, supplierId, from, to]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   useEffect(() => {
     setAlert(searchParams.get("alert") ?? undefined);
@@ -308,6 +344,7 @@ export default function CasesPage() {
             </TableBody>
           </Table>
         </div>
+        <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
 
         {/* Cards — mobile */}
         <div className="space-y-3 md:hidden">
@@ -376,6 +413,7 @@ export default function CasesPage() {
             })
           )}
         </div>
+        <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
       </CardContent>
 
       <ConfirmDialog

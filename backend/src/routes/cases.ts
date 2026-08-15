@@ -62,8 +62,12 @@ const CASE_SELECT = `
 router.get('/', async (req, res) => {
   const r = req as unknown as AuthedRequest;
   const { status, doctor_id, from, to, search, alert, hospital_id, insurer_id, supplier_id } = req.query as Record<string, string>;
+  const parsedPage = Number.parseInt(req.query.page as string, 10);
+  const parsedPageSize = Number.parseInt(req.query.pageSize as string, 10);
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  const pageSize = Number.isFinite(parsedPageSize) && parsedPageSize > 0 ? Math.min(parsedPageSize, 100) : 25;
 
-  let query = r.supabase.from('surgery_cases').select(CASE_SELECT).eq('org_id', r.orgId);
+  let query = r.supabase.from('surgery_cases').select(CASE_SELECT, { count: 'exact' }).eq('org_id', r.orgId);
   if (r.orgRole === 'doctor') query = query.eq('doctor_id', r.orgMemberId);
   if (status) query = query.eq('status', status);
   if (doctor_id) query = query.eq('doctor_id', doctor_id);
@@ -96,13 +100,26 @@ router.get('/', async (req, res) => {
     }
   }
 
-  const { data: queriedData, error } = await query.order('created_at', { ascending: false });
-  if (error) return res.status(400).json({ error });
   if (alert && !['authorization', 'billing', 'value_below_historical'].includes(alert)) {
     return res.status(400).json({ error: 'Alerta inválido' });
   }
-  const data = alert ? filterCasesByAlert(queriedData || [], alert as CaseAlertType) : queriedData || [];
-  res.json(data);
+
+  if (alert) {
+    // Alertas derivadas não são filtros SQL simples. Calculamos primeiro e só
+    // então paginamos para que o total represente os casos realmente alertados.
+    const { data: queriedData, error } = await query.order('created_at', { ascending: false });
+    if (error) return res.status(400).json({ error });
+    const filtered = filterCasesByAlert(queriedData || [], alert as CaseAlertType);
+    const start = (page - 1) * pageSize;
+    return res.json({ data: filtered.slice(start, start + pageSize), total: filtered.length, page, pageSize });
+  }
+
+  const start = (page - 1) * pageSize;
+  const { data, count, error } = await query
+    .order('created_at', { ascending: false })
+    .range(start, start + pageSize - 1);
+  if (error) return res.status(400).json({ error });
+  res.json({ data: data || [], total: count ?? 0, page, pageSize });
 });
 
 // GET /api/cases/:id
