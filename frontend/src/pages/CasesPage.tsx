@@ -145,7 +145,7 @@ export default function CasesPage() {
           </Select>
         </div>
 
-        <div className="rounded-lg border">
+        <div className="hidden rounded-lg border md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -221,6 +221,74 @@ export default function CasesPage() {
               )}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Cards — mobile */}
+        <div className="space-y-3 md:hidden">
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-28 w-full rounded-xl" />
+            ))
+          ) : rows.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">Nenhum caso encontrado.</p>
+          ) : (
+            rows.map((row) => {
+              const badge = PAYMENT_STATUS_BADGE[paymentStatus(row.status)];
+              return (
+                <div key={row.id} className="rounded-xl border p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{row.procedure?.name ?? "—"}</p>
+                      <p className="truncate text-sm text-muted-foreground">{row.patient?.full_name ?? "—"}</p>
+                    </div>
+                    <Badge variant={badge.variant as never} className={badge.className}>
+                      {paymentStatusLabel(row.status)}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="block text-muted-foreground/70">Cirurgia</span>
+                      <span className="font-medium">{row.data_cirurgia ?? "—"}</span>
+                    </div>
+                    <div>
+                      <span className="block text-muted-foreground/70">Solicitação</span>
+                      <span className="font-medium">{row.data_solicitacao ?? "—"}</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Ver caso de ${row.patient?.full_name ?? "paciente"}`}
+                      title="Ver detalhes"
+                      onClick={() => navigate(`/casos/${row.id}`)}
+                    >
+                      <Eye className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Editar caso de ${row.patient?.full_name ?? "paciente"}`}
+                      title="Editar"
+                      onClick={() => navigate(`/casos/${row.id}/editar`)}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      aria-label={`Excluir caso de ${row.patient?.full_name ?? "paciente"}`}
+                      title="Excluir"
+                      onClick={() => setToDelete(row)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </CardContent>
 

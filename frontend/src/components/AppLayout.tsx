@@ -96,8 +96,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               )
             }
           >
-            <Icon className="size-5" />
-            {label}
+            <Icon className="size-5 shrink-0" />
+            <span className="w-full truncate text-center">{label}</span>
           </NavLink>
         ))}
       </nav>
