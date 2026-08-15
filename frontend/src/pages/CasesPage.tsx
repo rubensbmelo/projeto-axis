@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { api } from "@/api/client";
 import type { CaseRow } from "@/types";
+import { useCachedFetch } from "@/lib/swr";
 import { PAYMENT_STATUS_BADGE, STATUS_OPTIONS, paymentStatus, paymentStatusLabel, statusLabel } from "@/lib/status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,8 +54,6 @@ function LoadingRows({ cols }: { cols: number }) {
 export default function CasesPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [rows, setRows] = useState<CaseRow[]>([]);
-  const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | undefined>();
   const [alert, setAlert] = useState<string | undefined>(() => searchParams.get("alert") ?? undefined);
   const [search, setSearch] = useState("");
@@ -68,30 +67,23 @@ export default function CasesPage() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (status && status !== "all") params.set("status", status);
-      if (debouncedSearch) params.set("search", debouncedSearch);
-      if (alert) params.set("alert", alert);
-      const qs = params.toString();
-      const data = await api.get<CaseRow[]>(`/cases${qs ? "?" + qs : ""}`);
-      setRows(data);
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
+  const listUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (status && status !== "all") params.set("status", status);
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (alert) params.set("alert", alert);
+    const qs = params.toString();
+    return `/cases${qs ? "?" + qs : ""}`;
   }, [status, debouncedSearch, alert]);
+
+  // Stale-while-revalidate: ao voltar de aba/janela (reload do navegador),
+  // a lista em cache aparece na hora — sem skeleton.
+  const { data: rowsData, loading, refetch } = useCachedFetch<CaseRow[]>(listUrl);
+  const rows = rowsData ?? [];
 
   useEffect(() => {
     setAlert(searchParams.get("alert") ?? undefined);
   }, [searchParams]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   const remove = async () => {
     if (!toDelete) return;
@@ -100,7 +92,7 @@ export default function CasesPage() {
       await api.del(`/cases/${toDelete.id}`);
       toast.success("Caso excluído");
       setToDelete(null);
-      load();
+      refetch();
     } catch (e) {
       toast.error((e as Error).message);
     } finally {

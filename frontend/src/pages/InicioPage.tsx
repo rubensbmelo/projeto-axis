@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
 
-import { api } from "@/api/client";
 import type { ReportAlerts, ReportSummary } from "@/types";
 import { useAuth } from "@/auth/AuthContext";
+import { useCachedFetch } from "@/lib/swr";
 import {
   Card,
   CardContent,
@@ -55,25 +53,10 @@ function RankingCard({ title, data }: { title: string; data: { label: string; co
 export default function InicioPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [summary, setSummary] = useState<ReportSummary | null>(null);
-  const [alerts, setAlerts] = useState<ReportAlerts | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: summary } = useCachedFetch<ReportSummary>("/reports/summary");
+  const { data: alerts } = useCachedFetch<ReportAlerts>("/reports/alerts");
 
-  useEffect(() => {
-    Promise.all([
-      api.get<ReportSummary>("/reports/summary"),
-      api.get<ReportAlerts>("/reports/alerts"),
-    ])
-      .then(([summaryData, alertsData]) => {
-        setSummary(summaryData);
-        setAlerts(alertsData);
-      })
-      .catch((error) => toast.error((error as Error).message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <PageLoader />;
-  if (!summary) return <p className="text-muted-foreground">Nenhum dado disponível.</p>;
+  if (!summary) return <PageLoader />;
 
   const name = user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "médico";
   const now = new Date();

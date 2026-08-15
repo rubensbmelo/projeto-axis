@@ -10,10 +10,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { toast } from "sonner";
 
-import { api } from "@/api/client";
 import type { CaseRow, ReportAlerts, ReportSummary } from "@/types";
+import { useCachedFetch } from "@/lib/swr";
 import { PAYMENT_STATUS_BADGE, paymentStatus, paymentStatusLabel } from "@/lib/status";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -119,36 +118,20 @@ function CountTable({
 
 export default function ReportsPage() {
   const navigate = useNavigate();
-  const [summary, setSummary] = useState<ReportSummary | null>(null);
-  const [pendencias, setPendencias] = useState<CaseRow[]>([]);
-  const [alerts, setAlerts] = useState<ReportAlerts | null>(null);
-  const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(currentMonthValue);
+  const { from, to } = monthBounds(period);
 
-  useEffect(() => {
-    setLoading(true);
-    const { from, to } = monthBounds(period);
-    Promise.all([
-      api.get<ReportSummary>(`/reports/summary?from=${from}&to=${to}`),
-      api.get<CaseRow[]>("/reports/pendencias-financeiras"),
-    ])
-      .then(([s, p]) => {
-        setSummary(s);
-        setPendencias(p);
-      })
-      .catch((e) => toast.error((e as Error).message))
-      .finally(() => setLoading(false));
-  }, [period]);
+  // Stale-while-revalidate: ao voltar de aba/janela (reload do navegador),
+  // os dados em cache aparecem na hora — sem skeleton.
+  const summaryRes = useCachedFetch<ReportSummary>(`/reports/summary?from=${from}&to=${to}`);
+  const pendenciasRes = useCachedFetch<CaseRow[]>("/reports/pendencias-financeiras");
+  const alertsRes = useCachedFetch<ReportAlerts>("/reports/alerts");
 
-  useEffect(() => {
-    api.get<ReportAlerts>("/reports/alerts")
-      .then(setAlerts)
-      .catch((e) => toast.error((e as Error).message));
-  }, []);
+  const summary = summaryRes.data;
+  const pendencias = pendenciasRes.data ?? [];
+  const alerts = alertsRes.data;
 
-  if (loading) return <PageLoader />;
-  if (!summary)
-    return <p className="text-muted-foreground">Nenhum dado disponível.</p>;
+  if (!summary) return <PageLoader />;
 
   const monthData = summary.cirurgias_por_mes.map(({ month, count }) => ({
     label: month,
