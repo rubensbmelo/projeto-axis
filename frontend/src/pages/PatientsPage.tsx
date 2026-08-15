@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -6,7 +7,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { api } from "@/api/client";
-import type { Patient } from "@/types";
+import type { Patient, PatientCreateResponse } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -78,6 +79,10 @@ const patientSchema = z.object({
 });
 
 type PatientForm = z.infer<typeof patientSchema>;
+type DuplicateState = {
+  created: PatientCreateResponse;
+  matches: Pick<Patient, "id" | "full_name" | "cpf">[];
+} | null;
 
 const DEFAULT_VALUES: PatientForm = {
   full_name: "",
@@ -88,13 +93,15 @@ const DEFAULT_VALUES: PatientForm = {
 };
 
 export default function PatientsPage() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Patient | null>(null);
   const [saving, setSaving] = useState(false);
   const [toDelete, setToDelete] = useState<Patient | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [duplicate, setDuplicate] = useState<DuplicateState>(null);
+  const [resolvingDuplicate, setResolvingDuplicate] = useState(false);
 
   const form = useForm<PatientForm>({
     resolver: zodResolver(patientSchema),
@@ -117,20 +124,7 @@ export default function PatientsPage() {
   }, [load]);
 
   const openNew = () => {
-    setEditing(null);
     form.reset(DEFAULT_VALUES);
-    setDialogOpen(true);
-  };
-
-  const openEdit = (p: Patient) => {
-    setEditing(p);
-    form.reset({
-      full_name: p.full_name,
-      cpf: p.cpf ?? "",
-      birth_date: p.birth_date ?? "",
-      phone: p.phone ?? "",
-      address: p.address ?? "",
-    });
     setDialogOpen(true);
   };
 
@@ -144,13 +138,13 @@ export default function PatientsPage() {
     };
     setSaving(true);
     try {
-      if (editing) {
-        await api.put(`/patients/${editing.id}`, payload);
-        toast.success("Paciente atualizado");
-      } else {
-        await api.post("/patients", payload);
-        toast.success("Paciente criado");
+      const created = await api.post<PatientCreateResponse>("/patients", payload);
+      if (created.warning === "possible_duplicate" && created.matches?.length) {
+        setDialogOpen(false);
+        setDuplicate({ created, matches: created.matches });
+        return;
       }
+      toast.success("Paciente criado");
       setDialogOpen(false);
       load();
     } catch (e) {
@@ -158,6 +152,27 @@ export default function PatientsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const keepExisting = async () => {
+    if (!duplicate) return;
+    setResolvingDuplicate(true);
+    try {
+      await api.del(`/patients/${duplicate.created.id}`);
+      toast.success("Paciente existente mantido; novo cadastro descartado");
+      setDuplicate(null);
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setResolvingDuplicate(false);
+    }
+  };
+
+  const keepNew = () => {
+    setDuplicate(null);
+    toast.success("Paciente criado");
+    load();
   };
 
   const remove = async () => {
@@ -209,7 +224,7 @@ export default function PatientsPage() {
                 </TableRow>
               ) : (
                 rows.map((p) => (
-                  <TableRow key={p.id}>
+                  <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/pacientes/${p.id}`)}>
                     <TableCell>{p.full_name}</TableCell>
                     <TableCell>{p.cpf ?? "—"}</TableCell>
                     <TableCell>{p.birth_date ?? "—"}</TableCell>
@@ -221,7 +236,10 @@ export default function PatientsPage() {
                           size="sm"
                           aria-label={`Editar paciente ${p.full_name}`}
                           title="Editar"
-                          onClick={() => openEdit(p)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            navigate(`/pacientes/${p.id}`);
+                          }}
                         >
                           <Pencil className="size-4" />
                         </Button>
@@ -231,7 +249,10 @@ export default function PatientsPage() {
                           className="text-destructive hover:text-destructive"
                           aria-label={`Excluir paciente ${p.full_name}`}
                           title="Excluir"
-                          onClick={() => setToDelete(p)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setToDelete(p);
+                          }}
                         >
                           <Trash2 className="size-4" />
                         </Button>
@@ -248,7 +269,7 @@ export default function PatientsPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? "Editar paciente" : "Novo paciente"}</DialogTitle>
+            <DialogTitle>Novo paciente</DialogTitle>
             <DialogDescription>Cadastro de paciente do seu consultório.</DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -335,6 +356,35 @@ export default function PatientsPage() {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!duplicate}
+        onOpenChange={(open) => {
+          if (!open && !resolvingDuplicate) keepNew();
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Paciente parecido encontrado</DialogTitle>
+            <DialogDescription>
+              Encontramos um paciente parecido: <strong>{duplicate?.matches[0]?.full_name}</strong>. Deseja usar esse paciente existente ou criar um novo mesmo assim?
+            </DialogDescription>
+          </DialogHeader>
+          {duplicate && duplicate.matches.length > 1 && (
+            <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+              {duplicate.matches.map((match) => <p key={match.id}>{match.full_name}</p>)}
+            </div>
+          )}
+          <DialogFooter className="sm:justify-between">
+            <Button type="button" variant="outline" onClick={keepNew} disabled={resolvingDuplicate}>
+              Criar novo mesmo assim
+            </Button>
+            <Button type="button" onClick={keepExisting} loading={resolvingDuplicate}>
+              Usar paciente existente
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

@@ -24,6 +24,17 @@ export interface Patient {
   created_at: string;
 }
 
+export interface PatientCreateResponse extends Patient {
+  warning?: "possible_duplicate";
+  matches?: Pick<Patient, "id" | "full_name" | "cpf">[];
+}
+
+export interface PatientSummary {
+  patient: Patient;
+  total_cirurgias: number;
+  valor_total_faturado: number;
+}
+
 export interface Reference {
   id: string;
   org_id: string;

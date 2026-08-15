@@ -22,6 +22,15 @@ describe('patients: CPF, campos obrigatórios e payload estrito', () => {
     expect(res.body.org_id).toBe(ctx.orgId);
   });
 
+  it('retorna aviso para nome igual ignorando acentos, sem bloquear criação', async () => {
+    const res = await post({ full_name: 'Joao da Silva' });
+    expect(res.status).toBe(201);
+    expect(res.body.warning).toBe('possible_duplicate');
+    expect(res.body.matches).toEqual([
+      expect.objectContaining({ full_name: 'João da Silva' }),
+    ]);
+  });
+
   it('rejeita sem nome (400)', async () => {
     const res = await post({ cpf: '123.456.789-01' });
     expect(res.status).toBe(400);
