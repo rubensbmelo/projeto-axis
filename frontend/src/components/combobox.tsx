@@ -2,7 +2,7 @@ import * as React from "react"
 import { Check, ChevronsUpDown } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import {
   Command,
   CommandEmpty,
@@ -48,12 +48,12 @@ export function Combobox({
       }}
     >
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
+        <button
+          type="button"
           role="combobox"
           aria-expanded={open}
-          type="button"
           className={cn(
+            buttonVariants({ variant: "outline" }),
             "h-8 w-full justify-between font-normal",
             !selected && "text-muted-foreground",
             className
@@ -61,7 +61,7 @@ export function Combobox({
         >
           {selected ? selected.label : placeholder}
           <ChevronsUpDown className="size-4 opacity-50" />
-        </Button>
+        </button>
       </PopoverTrigger>
       <PopoverContent
         className="w-[var(--radix-popover-trigger-width)] p-0"
