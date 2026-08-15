@@ -14,6 +14,14 @@ describe('relatórios', () => {
     return date.toISOString().slice(0, 10);
   };
 
+  const today = () => new Date().toISOString().slice(0, 10);
+
+  const monthBounds = (month: string) => {
+    const [year, monthNumber] = month.split('-').map(Number);
+    const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+    return { from: `${month}-01`, to: `${month}-${String(lastDay).padStart(2, '0')}` };
+  };
+
   beforeAll(async () => {
     ctx = await setupOrg('Reports');
     patientId = await createPatient(ctx.owner.token, ctx.orgId, 'Paciente Reports');
@@ -75,6 +83,18 @@ describe('relatórios', () => {
         data_recebimento: daysAgo(1),
       });
     expect(belowHistorical.status).toBe(201);
+
+    const currentCase = await http()
+      .post('/api/cases')
+      .set(authHeaders(ctx.owner.token, ctx.orgId))
+      .send({
+        patient_id: patientId,
+        doctor_id: ctx.ownerMemberId,
+        procedure_id: procedureId,
+        status: 'realizado',
+        data_cirurgia: today(),
+      });
+    expect(currentCase.status).toBe(201);
   });
 
   afterAll(async () => {
@@ -106,5 +126,28 @@ describe('relatórios', () => {
     expect(summary.status).toBe(200);
     expect(summary.body.faturamento_por_mes).toHaveLength(6);
     expect(summary.body.faturamento_por_mes.some((month: any) => month.valor === 1000)).toBe(true);
+  });
+
+  it('filtra o summary por mês e retorna zeros quando não há casos', async () => {
+    const currentMonth = today().slice(0, 7);
+    const current = monthBounds(currentMonth);
+    const empty = monthBounds('2099-01');
+
+    const [currentRes, emptyRes] = await Promise.all([
+      http().get(`/api/reports/summary?from=${current.from}&to=${current.to}`).set(authHeaders(ctx.owner.token, ctx.orgId)),
+      http().get(`/api/reports/summary?from=${empty.from}&to=${empty.to}`).set(authHeaders(ctx.owner.token, ctx.orgId)),
+    ]);
+
+    expect(currentRes.status).toBe(200);
+    expect(currentRes.body.total_casos).toBe(1);
+    expect(currentRes.body.cirurgias_realizadas).toBe(1);
+    expect(emptyRes.status).toBe(200);
+    expect(emptyRes.body.total_casos).toBe(0);
+    expect(emptyRes.body.cirurgias_realizadas).toBe(0);
+    expect(emptyRes.body.valor_total_faturado).toBe(0);
+    expect(emptyRes.body.valor_total_recebido).toBe(0);
+    expect(emptyRes.body.comissao_do_mes).toBe(0);
+    expect(emptyRes.body.por_hospital).toEqual([]);
+    expect(emptyRes.body.faturamento_por_mes).toEqual([{ mes: '2099-01', valor: 0 }]);
   });
 });

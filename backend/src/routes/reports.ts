@@ -20,19 +20,43 @@ function scopedCases(r: AuthedRequest, query: any) {
   return r.orgRole === 'doctor' ? scoped.eq('doctor_id', r.orgMemberId) : scoped;
 }
 
+function resolvePeriod(query: Record<string, string | undefined>, now = new Date()) {
+  const hasPeriod = Boolean(query.from || query.to);
+  const currentMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+  const month = query.from?.slice(0, 7) || currentMonth;
+  if (!/^\d{4}-\d{2}$/.test(month) || (query.from && !/^\d{4}-\d{2}-01$/.test(query.from))) return null;
+
+  const [year, monthNumber] = month.split('-').map(Number);
+  if (monthNumber < 1 || monthNumber > 12) return null;
+  const from = `${month}-01`;
+  const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+  const to = `${month}-${String(lastDay).padStart(2, '0')}`;
+  if (query.to && query.to !== to) return null;
+  return { from, to, month, hasPeriod };
+}
+
 // GET /api/reports/summary?from=YYYY-MM-DD&to=YYYY-MM-DD
 // Retorna os 4 recortes pedidos: cirurgias por mês, ranking de hospital,
 // ranking de convênio e ranking de procedimento.
 router.get('/summary', async (req, res) => {
   const r = req as unknown as AuthedRequest;
   const { from, to } = req.query as Record<string, string>;
+  const period = resolvePeriod({ from, to });
+  if (!period) return res.status(400).json({ error: 'Período inválido. Use o primeiro e o último dia do mesmo mês.' });
 
-  // Total de casos da organização, independente de status ou de ter
-  // data_cirurgia preenchida.
-  const { count: totalCasos, error: countError } = await scopedCases(
+  // Com período explícito, os indicadores usam casos realizados nele.
+  // Sem parâmetros, preserva o comportamento histórico desta rota.
+  let totalCasesQuery = scopedCases(
     r,
     r.supabase.from('surgery_cases').select('*', { count: 'exact', head: true })
   );
+  if (period.hasPeriod) {
+    totalCasesQuery = totalCasesQuery
+      .not('data_cirurgia', 'is', null)
+      .gte('data_cirurgia', period.from)
+      .lte('data_cirurgia', period.to);
+  }
+  const { count: totalCasos, error: countError } = await totalCasesQuery;
   if (countError) return res.status(400).json({ error: countError });
 
   let query = scopedCases(
@@ -43,8 +67,9 @@ router.get('/summary', async (req, res) => {
     .not('data_cirurgia', 'is', null)
   );
 
-  if (from) query = query.gte('data_cirurgia', from);
-  if (to) query = query.lte('data_cirurgia', to);
+  if (period.hasPeriod) {
+    query = query.gte('data_cirurgia', period.from).lte('data_cirurgia', period.to);
+  }
 
   const { data, error } = await query;
   if (error) return res.status(400).json({ error });
@@ -71,13 +96,17 @@ router.get('/summary', async (req, res) => {
     .reduce((sum: number, row: any) => sum + (Number(row.valor_cobranca) || 0), 0);
 
   // Recebimentos: o que realmente entrou, agrupado pela data de recebimento.
-  const { data: recv, error: recvError } = await scopedCases(
+  let receivedQuery = scopedCases(
     r,
     r.supabase
     .from('surgery_cases')
     .select('data_recebimento, valor_cobranca')
     .not('data_recebimento', 'is', null)
   );
+  if (period.hasPeriod) {
+    receivedQuery = receivedQuery.gte('data_recebimento', period.from).lte('data_recebimento', period.to);
+  }
+  const { data: recv, error: recvError } = await receivedQuery;
   if (recvError) return res.status(400).json({ error: recvError });
 
   const recvRows = recv || [];
@@ -114,19 +143,20 @@ router.get('/summary', async (req, res) => {
     .map(([label, total]) => ({ label, total }))
     .sort((a, b) => b.total - a.total);
 
-  // Comissão RECEBIDA no mês corrente (por data_recebimento) — dinheiro que
-  // efetivamente entrou neste mês, não comissão de cirurgia feita no mês
-  // (o ciclo de autorização/cobrança do convênio pode pagar meses depois).
+  // Comissão recebida no período (por data_recebimento) — dinheiro que
+  // efetivamente entrou no período, não comissão de cirurgia feita nele.
   const now = new Date();
-  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const commissionFrom = period.hasPeriod ? period.from : `${currentMonth}-01`;
+  const commissionTo = period.hasPeriod ? period.to : `${currentMonth}-31`;
   const { data: commMonth, error: commMonthError } = await scopedCases(
     r,
     r.supabase
     .from('surgery_cases')
     .select('comissao_medico')
     .not('data_recebimento', 'is', null)
-    .gte('data_recebimento', `${month}-01`)
-    .lte('data_recebimento', `${month}-31`)
+    .gte('data_recebimento', commissionFrom)
+    .lte('data_recebimento', commissionTo)
   );
   if (commMonthError) return res.status(400).json({ error: commMonthError });
   const comissao_do_mes = (commMonth || []).reduce((s: number, row: any) => s + (Number(row.comissao_medico) || 0), 0);
@@ -138,10 +168,14 @@ router.get('/summary', async (req, res) => {
   if (billingError) return res.status(400).json({ error: billingError });
 
   const faturamentoByMonth: Record<string, number> = {};
-  const chartStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 1));
-  for (let i = 0; i < 6; i += 1) {
-    const date = new Date(Date.UTC(chartStart.getUTCFullYear(), chartStart.getUTCMonth() + i, 1));
-    faturamentoByMonth[date.toISOString().slice(0, 7)] = 0;
+  if (period.hasPeriod) {
+    faturamentoByMonth[period.month] = 0;
+  } else {
+    const chartStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 1));
+    for (let i = 0; i < 6; i += 1) {
+      const date = new Date(Date.UTC(chartStart.getUTCFullYear(), chartStart.getUTCMonth() + i, 1));
+      faturamentoByMonth[date.toISOString().slice(0, 7)] = 0;
+    }
   }
   for (const row of billingRows || []) {
     if (!['faturado', 'pago'].includes(row.status) || !row.entrada_cobranca) continue;

@@ -22,6 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -56,6 +57,20 @@ function CountUp({ value }: { value: number }) {
 
 function money(value: number) {
   return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function currentMonthValue() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthBounds(value: string) {
+  const [year, month] = value.split("-").map(Number);
+  const lastDay = new Date(year, month, 0).getDate();
+  return {
+    from: `${value}-01`,
+    to: `${value}-${String(lastDay).padStart(2, "0")}`,
+  };
 }
 
 function CountTable({
@@ -108,20 +123,27 @@ export default function ReportsPage() {
   const [pendencias, setPendencias] = useState<CaseRow[]>([]);
   const [alerts, setAlerts] = useState<ReportAlerts | null>(null);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState(currentMonthValue);
 
   useEffect(() => {
+    setLoading(true);
+    const { from, to } = monthBounds(period);
     Promise.all([
-      api.get<ReportSummary>("/reports/summary"),
+      api.get<ReportSummary>(`/reports/summary?from=${from}&to=${to}`),
       api.get<CaseRow[]>("/reports/pendencias-financeiras"),
-      api.get<ReportAlerts>("/reports/alerts"),
     ])
-      .then(([s, p, a]) => {
+      .then(([s, p]) => {
         setSummary(s);
         setPendencias(p);
-        setAlerts(a);
       })
       .catch((e) => toast.error((e as Error).message))
       .finally(() => setLoading(false));
+  }, [period]);
+
+  useEffect(() => {
+    api.get<ReportAlerts>("/reports/alerts")
+      .then(setAlerts)
+      .catch((e) => toast.error((e as Error).message));
   }, []);
 
   if (loading) return <PageLoader />;
@@ -162,11 +184,23 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-balance">Painel</h2>
-        <p className="mt-1 text-[13px] text-muted-foreground text-balance">
-           Visão geral dos casos do seu espaço no AXIS.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-balance">Painel</h2>
+          <p className="mt-1 text-[13px] text-muted-foreground text-balance">
+             Visão geral dos casos do seu espaço no AXIS.
+          </p>
+        </div>
+        <div className="grid gap-1.5 sm:w-44">
+          <label htmlFor="report-period" className="text-xs font-medium text-muted-foreground">Período</label>
+          <Input
+            id="report-period"
+            type="month"
+            value={period}
+            onChange={(event) => setPeriod(event.target.value || currentMonthValue())}
+            aria-label="Selecionar mês e ano do relatório"
+          />
+        </div>
       </div>
 
       <section aria-labelledby="alerts-title" className="space-y-3">
