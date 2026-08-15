@@ -14,6 +14,7 @@ import PatientsPage from "@/pages/PatientsPage";
 import ReferencePage from "@/pages/ReferencePage";
 import ReportsPage from "@/pages/ReportsPage";
 import MembersPage from "@/pages/MembersPage";
+import InicioPage from "@/pages/InicioPage";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -85,7 +86,8 @@ export default function App() {
     <div key="app" className="animate-in fade-in-0 duration-200 ease-[var(--ease-axis-out)]">
       <AppLayout>
         <Routes>
-          <Route path="/" element={<Navigate to="/casos" replace />} />
+          <Route path="/" element={<Navigate to="/inicio" replace />} />
+          <Route path="/inicio" element={<InicioPage />} />
           <Route path="/casos" element={<CasesPage />} />
           <Route path="/casos/novo" element={<CaseFormPage />} />
           <Route path="/casos/:id" element={<CaseDetailPage />} />
@@ -94,7 +96,7 @@ export default function App() {
           <Route path="/cadastros" element={<ReferencePage />} />
           <Route path="/relatorios" element={<ReportsPage />} />
           <Route path="/membros" element={<MembersPage />} />
-          <Route path="*" element={<Navigate to="/casos" replace />} />
+          <Route path="*" element={<Navigate to="/inicio" replace />} />
         </Routes>
       </AppLayout>
     </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Activity } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,6 +33,7 @@ export default function LoginPage() {
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        navigate("/inicio", { replace: true });
       } else {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;

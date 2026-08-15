@@ -39,7 +39,7 @@ router.get('/summary', async (req, res) => {
     r,
     r.supabase
     .from('surgery_cases')
-    .select('data_cirurgia, valor_cobranca, hospital:hospitals(name), insurer:insurers(name), procedure:procedures(name), status')
+    .select('data_cirurgia, valor_cobranca, hospital:hospitals(name), insurer:insurers(name), supplier:suppliers(name), procedure:procedures(name), status')
     .not('data_cirurgia', 'is', null)
   );
 
@@ -62,6 +62,7 @@ router.get('/summary', async (req, res) => {
 
   const por_hospital = countBy(rows, (row: any) => row.hospital?.name);
   const por_convenio = countBy(rows, (row: any) => row.insurer?.name);
+  const por_fornecedor = countBy(rows, (row: any) => row.supplier?.name);
   const por_procedimento = countBy(rows, (row: any) => row.procedure?.name);
 
   // Valor faturado = soma dos casos já faturados/pagos (status reflete cobrança).
@@ -156,6 +157,7 @@ router.get('/summary', async (req, res) => {
     cirurgias_por_mes,
     por_hospital,
     por_convenio,
+    por_fornecedor,
     por_procedimento,
     recebimentos_por_mes,
     comissao_por_medico,

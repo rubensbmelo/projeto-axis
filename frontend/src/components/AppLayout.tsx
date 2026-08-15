@@ -4,6 +4,7 @@ import {
   Activity,
   BarChart3,
   FolderCog,
+  Home,
   LogOut,
   ShieldCheck,
   Stethoscope,
@@ -16,6 +17,7 @@ import { supabase } from "@/api/supabase";
 import { useAuth } from "@/auth/AuthContext";
 
 const NAV = [
+  { to: "/inicio", label: "Início", icon: Home },
   { to: "/casos", label: "Casos", icon: Stethoscope },
   { to: "/pacientes", label: "Pacientes", icon: Users },
   { to: "/cadastros", label: "Cadastros", icon: FolderCog },
