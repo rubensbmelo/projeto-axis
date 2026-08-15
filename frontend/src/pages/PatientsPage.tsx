@@ -102,6 +102,7 @@ export default function PatientsPage() {
   const [deleting, setDeleting] = useState(false);
   const [duplicate, setDuplicate] = useState<DuplicateState>(null);
   const [resolvingDuplicate, setResolvingDuplicate] = useState(false);
+  const [cpfDuplicate, setCpfDuplicate] = useState<{ patientId: string; patientName: string } | null>(null);
 
   const form = useForm<PatientForm>({
     resolver: zodResolver(patientSchema),
@@ -148,6 +149,12 @@ export default function PatientsPage() {
       setDialogOpen(false);
       load();
     } catch (e) {
+      const body = (e as Error & { body?: { error?: string; existing_patient_id?: string; existing_patient_name?: string } }).body;
+      if (body?.error === "cpf_duplicado") {
+        setDialogOpen(false);
+        setCpfDuplicate({ patientId: body.existing_patient_id ?? "", patientName: body.existing_patient_name ?? "" });
+        return;
+      }
       toast.error((e as Error).message);
     } finally {
       setSaving(false);
@@ -384,6 +391,28 @@ export default function PatientsPage() {
             <Button type="button" onClick={keepExisting} loading={resolvingDuplicate}>
               Usar paciente existente
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!cpfDuplicate} onOpenChange={(open) => { if (!open) setCpfDuplicate(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>CPF já cadastrado</DialogTitle>
+            <DialogDescription>
+              Já existe um paciente com este CPF: <strong>{cpfDuplicate?.patientName || "não informado"}</strong>.
+              Não é possível cadastrar outro com o mesmo CPF.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-between">
+            <Button type="button" variant="outline" onClick={() => setCpfDuplicate(null)}>
+              Fechar
+            </Button>
+            {cpfDuplicate?.patientId && (
+              <Button type="button" onClick={() => navigate(`/pacientes/${cpfDuplicate.patientId}`)}>
+                Ver ficha do paciente existente
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

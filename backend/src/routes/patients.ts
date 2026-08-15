@@ -140,10 +140,24 @@ router.post('/', canWrite, async (req, res) => {
   ).values());
 
   const normalizedCpf = cpf ? cpf.replace(/\D/g, '') : '';
-  const matches = (existingPatients || []).filter((patient: any) => {
-    const sameCpf = normalizedCpf && patient.cpf && patient.cpf.replace(/\D/g, '') === normalizedCpf;
-    return Boolean(sameCpf) || similarName(full_name, patient.full_name);
-  });
+
+  // CPF é o identificador forte: idêntico dentro da mesma organização é
+  // duplicado de verdade — bloqueia (não oferece "criar mesmo assim").
+  const cpfMatch = (existingPatients || []).find((patient: any) =>
+    Boolean(normalizedCpf && patient.cpf && patient.cpf.replace(/\D/g, '') === normalizedCpf)
+  );
+  if (cpfMatch) {
+    return res.status(400).json({
+      error: 'cpf_duplicado',
+      existing_patient_id: cpfMatch.id,
+      existing_patient_name: cpfMatch.full_name,
+    });
+  }
+
+  // Nome parecido continua como aviso soft (opção de seguir mesmo assim).
+  const matches = (existingPatients || []).filter((patient: any) =>
+    similarName(full_name, patient.full_name)
+  );
 
   const { data, error } = await r.supabase
     .from('patients')

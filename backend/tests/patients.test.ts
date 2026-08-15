@@ -31,6 +31,23 @@ describe('patients: CPF, campos obrigatórios e payload estrito', () => {
     ]);
   });
 
+  it('bloqueia CPF duplicado na mesma organização (cpf_duplicado)', async () => {
+    const first = await post({ full_name: 'Maria Duplicada', cpf: '111.222.333-44' });
+    expect(first.status).toBe(201);
+
+    const res = await post({ full_name: 'Maria Outra Pessoa', cpf: '11122233344' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('cpf_duplicado');
+    expect(res.body.existing_patient_id).toBe(first.body.id);
+  });
+
+  it('permite múltiplos pacientes sem CPF', async () => {
+    const res = await post({ full_name: 'Sem CPF Um' });
+    expect(res.status).toBe(201);
+    const res2 = await post({ full_name: 'Sem CPF Dois' });
+    expect(res2.status).toBe(201);
+  });
+
   it('rejeita sem nome (400)', async () => {
     const res = await post({ cpf: '123.456.789-01' });
     expect(res.status).toBe(400);

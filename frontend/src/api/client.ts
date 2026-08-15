@@ -29,8 +29,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, { ...init, headers });
   if (!res.ok) {
     let message = `Erro ${res.status}`;
+    let errorBody: unknown = null;
     try {
       const body = await res.json();
+      errorBody = body;
       if (body?.error) {
         message = typeof body.error === 'string' ? body.error : JSON.stringify(body.error);
       } else if (body?.message) {
@@ -39,7 +41,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // corpo não-JSON
     }
-    throw new Error(message);
+    const err = new Error(message) as Error & { body?: unknown };
+    err.body = errorBody;
+    throw err;
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
