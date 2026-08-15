@@ -61,7 +61,7 @@ const CASE_SELECT = `
 // GET /api/cases — lista com filtros opcionais
 router.get('/', async (req, res) => {
   const r = req as unknown as AuthedRequest;
-  const { status, doctor_id, from, to, search, alert } = req.query as Record<string, string>;
+  const { status, doctor_id, from, to, search, alert, hospital_id, insurer_id, supplier_id } = req.query as Record<string, string>;
 
   let query = r.supabase.from('surgery_cases').select(CASE_SELECT).eq('org_id', r.orgId);
   if (r.orgRole === 'doctor') query = query.eq('doctor_id', r.orgMemberId);
@@ -69,6 +69,9 @@ router.get('/', async (req, res) => {
   if (doctor_id) query = query.eq('doctor_id', doctor_id);
   if (from) query = query.gte('data_cirurgia', from);
   if (to) query = query.lte('data_cirurgia', to);
+  if (hospital_id) query = query.eq('hospital_id', hospital_id);
+  if (insurer_id) query = query.eq('insurer_id', insurer_id);
+  if (supplier_id) query = query.eq('supplier_id', supplier_id);
   if (search) {
     // Busca por nome de paciente E por nome de procedimento (via tabela de
     // referência). Primeiro achamos os ids correspondentes e filtramos.

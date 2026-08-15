@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Eye, Funnel, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { api } from "@/api/client";
-import type { CaseRow } from "@/types";
+import type { CaseRow, Reference } from "@/types";
 import { useCachedFetch } from "@/lib/swr";
 import { PAYMENT_STATUS_BADGE, STATUS_OPTIONS, paymentStatus, paymentStatusLabel, statusLabel } from "@/lib/status";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -34,6 +34,14 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 function LoadingRows({ cols }: { cols: number }) {
   return (
@@ -58,8 +66,17 @@ export default function CasesPage() {
   const [alert, setAlert] = useState<string | undefined>(() => searchParams.get("alert") ?? undefined);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [hospitalId, setHospitalId] = useState("");
+  const [insurerId, setInsurerId] = useState("");
+  const [supplierId, setSupplierId] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [toDelete, setToDelete] = useState<CaseRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const { data: hospitals = [] } = useCachedFetch<Reference[]>("/hospitals");
+  const { data: insurers = [] } = useCachedFetch<Reference[]>("/insurers");
+  const { data: suppliers = [] } = useCachedFetch<Reference[]>("/suppliers");
 
   // Debounce curto (~250ms) pra não disparar request a cada tecla.
   useEffect(() => {
@@ -72,14 +89,28 @@ export default function CasesPage() {
     if (status && status !== "all") params.set("status", status);
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (alert) params.set("alert", alert);
+    if (hospitalId) params.set("hospital_id", hospitalId);
+    if (insurerId) params.set("insurer_id", insurerId);
+    if (supplierId) params.set("supplier_id", supplierId);
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
     const qs = params.toString();
     return `/cases${qs ? "?" + qs : ""}`;
-  }, [status, debouncedSearch, alert]);
+  }, [status, debouncedSearch, alert, hospitalId, insurerId, supplierId, from, to]);
 
   // Stale-while-revalidate: ao voltar de aba/janela (reload do navegador),
   // a lista em cache aparece na hora — sem skeleton.
   const { data: rowsData, loading, refetch } = useCachedFetch<CaseRow[]>(listUrl);
   const rows = rowsData ?? [];
+  const activeFilterCount = [hospitalId, insurerId, supplierId, from || to].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setHospitalId("");
+    setInsurerId("");
+    setSupplierId("");
+    setFrom("");
+    setTo("");
+  };
 
   useEffect(() => {
     setAlert(searchParams.get("alert") ?? undefined);
@@ -135,6 +166,69 @@ export default function CasesPage() {
               ))}
             </SelectContent>
           </Select>
+          <Sheet>
+            <SheetTrigger asChild>
+              <button type="button" className={buttonVariants({ variant: "outline" })}>
+                <Funnel className="size-4" />
+                Filtros
+                {activeFilterCount > 0 && (
+                  <Badge variant="secondary" className="ml-0.5 size-5 justify-center rounded-full px-0 text-[11px]">
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetHeader>
+                <SheetTitle>Filtros avançados</SheetTitle>
+                <SheetDescription>Refine os casos por referência e período da cirurgia.</SheetDescription>
+              </SheetHeader>
+              <div className="grid gap-5 overflow-y-auto py-2">
+                <div className="grid gap-2">
+                  <label htmlFor="case-filter-hospital" className="text-sm font-medium">Hospital</label>
+                  <Select value={hospitalId || "all"} onValueChange={(value) => setHospitalId(value === "all" ? "" : value)}>
+                    <SelectTrigger id="case-filter-hospital" className="w-full"><SelectValue placeholder="Todos os hospitais" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os hospitais</SelectItem>
+                      {(hospitals ?? []).map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <label htmlFor="case-filter-insurer" className="text-sm font-medium">Convênio</label>
+                  <Select value={insurerId || "all"} onValueChange={(value) => setInsurerId(value === "all" ? "" : value)}>
+                    <SelectTrigger id="case-filter-insurer" className="w-full"><SelectValue placeholder="Todos os convênios" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os convênios</SelectItem>
+                      {(insurers ?? []).map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <label htmlFor="case-filter-supplier" className="text-sm font-medium">Fornecedor</label>
+                  <Select value={supplierId || "all"} onValueChange={(value) => setSupplierId(value === "all" ? "" : value)}>
+                    <SelectTrigger id="case-filter-supplier" className="w-full"><SelectValue placeholder="Todos os fornecedores" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os fornecedores</SelectItem>
+                      {(suppliers ?? []).map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <fieldset className="grid gap-3">
+                  <legend className="text-sm font-medium">Data da cirurgia</legend>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="grid gap-1.5"><label htmlFor="case-filter-from" className="text-xs text-muted-foreground">De</label><Input id="case-filter-from" type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></div>
+                    <div className="grid gap-1.5"><label htmlFor="case-filter-to" className="text-xs text-muted-foreground">Até</label><Input id="case-filter-to" type="date" value={to} onChange={(event) => setTo(event.target.value)} /></div>
+                  </div>
+                </fieldset>
+              </div>
+              {activeFilterCount > 0 && (
+                <button type="button" className="mt-auto text-left text-sm font-medium text-destructive hover:underline" onClick={clearFilters}>
+                  Limpar filtros
+                </button>
+              )}
+            </SheetContent>
+          </Sheet>
         </div>
 
         <div className="hidden rounded-lg border md:block">
