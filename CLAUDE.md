@@ -197,6 +197,20 @@ perder o fio de qual ferramenta corrigiu o quê.
       vale monitorar volume e ajustar a estratégia se uma organização chegar
       a dezenas de milhares de pacientes.
 
+## Deploy na VPS (acesso mínimo)
+
+- **Usuário de deploy**: `axis` (dono de `/opt/axis`, no grupo `docker`,
+  sem sudo de deploy). **Usar este usuário pro deploy — NÃO root.**
+- **Chave SSH dedicada**: `~/.ssh/axis_deploy_ed25519` (comment
+  `axis-deploy@opencode`), instalada no `/home/axis/.ssh/authorized_keys`.
+- **Alias SSH local**: `axis-vps` → `User axis` + `IdentityFile
+  ~/.ssh/axis_deploy_ed25519` + `IdentitiesOnly yes`. Ex: `ssh axis-vps`.
+- **Root**: fica **só como fallback de emergência** (alias `76.13.175.61` /
+  chave `id_ed25519`). Não usar rotineiramente pro deploy.
+- **Ciclo de deploy** (como `axis`): ir a `/opt/axis`, `git pull`, e
+  `docker compose --env-file .env.production up -d --build`; validar
+  `/health`, `/inicio`, `/casos`, `/relatorios`.
+
 ## Próximo passo sugerido
 
 - Corrigir o bug do Combobox em `/casos/novo` (bloqueia o fluxo de criar caso).
