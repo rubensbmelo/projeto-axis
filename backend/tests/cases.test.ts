@@ -116,5 +116,57 @@ describe('cases: payload, status e referências por organização', () => {
       const res = await put({ status: 'cancelado' });
       expect(res.status).toBe(200);
     });
+
+    it('bloqueia voltar de "pago" para "solicitado"', async () => {
+      const created = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId });
+      const caseId = created.body.id;
+      await http().put(`/api/cases/${caseId}`).set(authHeaders(ctx.owner.token, ctx.orgId)).send({ status: 'autorizado' });
+      await http().put(`/api/cases/${caseId}`).set(authHeaders(ctx.owner.token, ctx.orgId)).send({ status: 'agendado' });
+      await http().put(`/api/cases/${caseId}`).set(authHeaders(ctx.owner.token, ctx.orgId)).send({ status: 'realizado' });
+      await http().put(`/api/cases/${caseId}`).set(authHeaders(ctx.owner.token, ctx.orgId)).send({ status: 'faturado' });
+      await http().put(`/api/cases/${caseId}`).set(authHeaders(ctx.owner.token, ctx.orgId)).send({ status: 'pago' });
+      const res = await http().put(`/api/cases/${caseId}`).set(authHeaders(ctx.owner.token, ctx.orgId)).send({ status: 'solicitado' });
+      expect(res.status).toBe(400);
+      expect(String(res.body.error)).toMatch(/não é possível voltar de "pago" para "solicitado"/i);
+    });
+  });
+
+  describe('validação de payload via API direta (sem frontend)', () => {
+    it('rejeita data inválida no POST', async () => {
+      const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId, data_cirurgia: '15/07/2026' });
+      expect(res.status).toBe(400);
+    });
+
+    it('rejeita valor negativo no POST', async () => {
+      const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId, valor_cobranca: -5 });
+      expect(res.status).toBe(400);
+    });
+
+    it('rejeita string não-numérica em valor', async () => {
+      const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId, valor_cobranca: 'abc' });
+      expect(res.status).toBe(400);
+    });
+
+    it('rejeita criar caso já com status avançado (ex: pago)', async () => {
+      const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId, status: 'pago' });
+      expect(res.status).toBe(400);
+      expect(JSON.stringify(res.body)).toMatch(/começar como 'solicitado'/i);
+    });
+
+    it('permite criar caso com status solicitado explícito', async () => {
+      const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId, status: 'solicitado' });
+      expect(res.status).toBe(201);
+    });
+
+    it('permite criar caso sem status (default solicitado)', async () => {
+      const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId });
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe('solicitado');
+    });
+
+    it('permite campo matricula com formato livre ("Particular", "127/p8")', async () => {
+      const res = await post({ patient_id: patientId, doctor_id: ctx.ownerMemberId, procedure_id: procId, matricula: '127/p8' });
+      expect(res.status).toBe(201);
+    });
   });
 });

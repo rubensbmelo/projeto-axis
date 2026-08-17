@@ -16,6 +16,23 @@ describe('relatórios', () => {
 
   const today = () => new Date().toISOString().slice(0, 10);
 
+  // Cria um caso como 'solicitado' e avança via PUT até o status desejado
+  // (o POST agora só aceita começar em 'solicitado'). A transição é válida
+  // pois só anda pra frente no fluxo.
+  const createCaseAtStatus = async (body: Record<string, unknown>, target: string) => {
+    const { status: _omit, ...rest } = body;
+    const created = await http()
+      .post('/api/cases')
+      .set(authHeaders(ctx.owner.token, ctx.orgId))
+      .send(rest);
+    expect(created.status).toBe(201);
+    const caseId = created.body.id;
+    const r = await http().put(`/api/cases/${caseId}`).set(authHeaders(ctx.owner.token, ctx.orgId)).send({ status: target });
+    expect(r.status).toBe(200);
+    return created;
+  };
+
+
   const monthBounds = (month: string) => {
     const [year, monthNumber] = month.split('-').map(Number);
     const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
@@ -28,18 +45,13 @@ describe('relatórios', () => {
     procedureId = await createProcedure(ctx.owner.token, ctx.orgId, 'Procedimento Reports');
     insurerId = await createInsurer(ctx.owner.token, ctx.orgId, 'Convênio Reports');
 
-    const created = await http()
-      .post('/api/cases')
-      .set(authHeaders(ctx.owner.token, ctx.orgId))
-      .send({
-        patient_id: patientId,
-        doctor_id: ctx.ownerMemberId,
-        procedure_id: procedureId,
-        status: 'faturado',
-        entrada_cobranca: daysAgo(45),
-        valor_cobranca: 1000,
-      });
-    expect(created.status).toBe(201);
+    const created = await createCaseAtStatus({
+      patient_id: patientId,
+      doctor_id: ctx.ownerMemberId,
+      procedure_id: procedureId,
+      entrada_cobranca: daysAgo(45),
+      valor_cobranca: 1000,
+    }, 'faturado');
 
     const mismatched = await http()
       .post('/api/cases')
@@ -55,46 +67,31 @@ describe('relatórios', () => {
     expect(mismatched.status).toBe(201);
 
     for (let i = 0; i < 5; i += 1) {
-      const historical = await http()
-        .post('/api/cases')
-        .set(authHeaders(ctx.owner.token, ctx.orgId))
-        .send({
-          patient_id: patientId,
-          doctor_id: ctx.ownerMemberId,
-          procedure_id: procedureId,
-          insurer_id: insurerId,
-          status: 'faturado',
-          valor_cobranca: 1000,
-          data_recebimento: daysAgo(1),
-        });
-      expect(historical.status).toBe(201);
-    }
-
-    const belowHistorical = await http()
-      .post('/api/cases')
-      .set(authHeaders(ctx.owner.token, ctx.orgId))
-      .send({
+      const historical = await createCaseAtStatus({
         patient_id: patientId,
         doctor_id: ctx.ownerMemberId,
         procedure_id: procedureId,
         insurer_id: insurerId,
-        status: 'faturado',
-        valor_cobranca: 700,
+        valor_cobranca: 1000,
         data_recebimento: daysAgo(1),
-      });
-    expect(belowHistorical.status).toBe(201);
+      }, 'faturado');
+    }
 
-    const currentCase = await http()
-      .post('/api/cases')
-      .set(authHeaders(ctx.owner.token, ctx.orgId))
-      .send({
-        patient_id: patientId,
-        doctor_id: ctx.ownerMemberId,
-        procedure_id: procedureId,
-        status: 'realizado',
-        data_cirurgia: today(),
-      });
-    expect(currentCase.status).toBe(201);
+    const belowHistorical = await createCaseAtStatus({
+      patient_id: patientId,
+      doctor_id: ctx.ownerMemberId,
+      procedure_id: procedureId,
+      insurer_id: insurerId,
+      valor_cobranca: 700,
+      data_recebimento: daysAgo(1),
+    }, 'faturado');
+
+    const currentCase = await createCaseAtStatus({
+      patient_id: patientId,
+      doctor_id: ctx.ownerMemberId,
+      procedure_id: procedureId,
+      data_cirurgia: today(),
+    }, 'realizado');
   });
 
   afterAll(async () => {

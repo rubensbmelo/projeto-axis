@@ -11,6 +11,10 @@ export const STATUS_FLOW = [
 
 export const STATUS_VALUES = [...STATUS_FLOW, 'cancelado'];
 
+// No POST (criação), o status só pode começar como 'solicitado' (ou vazio,
+// assumindo esse default) — não faz sentido criar um caso já 'pago' do zero.
+export const CREATE_STATUS_VALUES = ['solicitado'] as const;
+
 const uuid = z.string().uuid('ID inválido');
 
 const isoDate = z
@@ -47,7 +51,17 @@ export const caseCreateSchema = z
     receita_adicional: money.optional(),
     observacoes: z.string().max(2000).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((values, ctx) => {
+    // No POST, um caso começa sempre como 'solicitado' (ou vazio => default).
+    if (values.status !== undefined && values.status !== 'solicitado') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['status'],
+        message: "Novo caso deve começar como 'solicitado'",
+      });
+    }
+  });
 
 // PUT: tudo opcional (atualização parcial). Transição de status é validada na
 // rota, onde temos o status anterior.
