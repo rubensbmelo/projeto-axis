@@ -129,7 +129,9 @@ export default function CasesPage() {
   // a lista em cache aparece na hora — sem skeleton.
   const { data: rowsData, loading, refetch } = useCachedFetch<PaginatedCases>(listUrl);
   const rows = rowsData?.data ?? [];
-  const totalPages = Math.max(1, Math.ceil((rowsData?.total ?? 0) / 25));
+  const pageSize = rowsData?.pageSize ?? 25;
+  const currentPage = rowsData?.page ?? page;
+  const totalPages = Math.max(1, Math.ceil((rowsData?.total ?? 0) / pageSize));
   const activeFilterCount = [hospitalId, insurerId, supplierId, from || to].filter(Boolean).length;
 
   const clearFilters = () => {
@@ -344,7 +346,6 @@ export default function CasesPage() {
             </TableBody>
           </Table>
         </div>
-        <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
 
         {/* Cards — mobile */}
         <div className="space-y-3 md:hidden">
@@ -413,7 +414,7 @@ export default function CasesPage() {
             })
           )}
         </div>
-        <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
+        <PaginationControls page={currentPage} totalPages={totalPages} onPageChange={setPage} />
       </CardContent>
 
       <ConfirmDialog
