@@ -199,8 +199,9 @@ perder o fio de qual ferramenta corrigiu o quê.
 
 ## Deploy na VPS (acesso mínimo)
 
-- **Usuário de deploy**: `axis` (dono de `/opt/axis`, no grupo `docker`,
-  sem sudo de deploy). **Usar este usuário pro deploy — NÃO root.**
+- **Usuário de deploy**: `axis` (dono de `/opt/axis`, **apenas** no grupo
+  `docker` — **NÃO tem sudo**). Usar este usuário pro deploy — NÃO root.
+  O deploy funciona sem sudo: `git pull` + `docker compose` + healthcheck.
 - **Chave SSH dedicada**: `~/.ssh/axis_deploy_ed25519` (comment
   `axis-deploy@opencode`), instalada no `/home/axis/.ssh/authorized_keys`.
 - **Alias SSH local**: `axis-vps` → `User axis` + `IdentityFile
