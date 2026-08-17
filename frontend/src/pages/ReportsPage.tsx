@@ -174,7 +174,7 @@ export default function ReportsPage() {
              Visão geral dos casos do seu espaço no AXIS.
           </p>
         </div>
-        <div className="grid gap-1.5 sm:w-44">
+        <div className="grid min-w-0 w-full gap-1.5 sm:w-44">
           <label htmlFor="report-period" className="text-xs font-medium text-muted-foreground">Período</label>
           <Input
             id="report-period"
@@ -182,6 +182,7 @@ export default function ReportsPage() {
             value={period}
             onChange={(event) => setPeriod(event.target.value || currentMonthValue())}
             aria-label="Selecionar mês e ano do relatório"
+            className="min-w-0 max-w-full w-full appearance-none"
           />
         </div>
       </div>
