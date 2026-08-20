@@ -7,7 +7,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "import:historical": "ts-node --transpile-only scripts/import-historical-cases.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.28.0",
@@ -28,6 +29,7 @@
     "supertest": "^7.2.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.1.6",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "xlsx": "^0.18.5"
   }
 }

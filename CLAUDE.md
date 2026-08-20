@@ -96,7 +96,9 @@ Fontes usadas para levantar requisitos (todas já processadas):
       fino e revisão de UX.
 - [ ] Onboarding visual (tela de "criar organização") — JÁ FEITO no front,
       resta revisão/refinamento.
-- [ ] Deploy
+- [x] Deploy — em produção em `axis-clin.duckdns.org` (VPS, ver "Deploy na
+      VPS" abaixo), com os 179 casos reais do Dr. Maurício já importados
+      (ver "Importação dos dados reais" abaixo).
 
 ## Pendências conscientes (adiadas)
 
@@ -197,6 +199,63 @@ perder o fio de qual ferramenta corrigiu o quê.
       vale monitorar volume e ajustar a estratégia se uma organização chegar
       a dezenas de milhares de pacientes.
 
+## Importação dos dados reais (179 casos)
+
+- Os 179 casos históricos reais da planilha do Dr. Maurício (`Planilha
+  Controle de Procedimentos.xlsx`) foram importados pro banco de produção
+  em 2026-08-20. Script único em `backend/scripts/import-historical-cases.ts`
+  (roda em dry-run por padrão, só grava com `--commit`); relatório de cada
+  execução salvo em `backend/scripts/reports/import-report-*.txt`.
+  Trata normalização de hospital/convênio/fornecedor/procedimento (agrupa
+  variações óbvias de maiúscula/acento/espaço, lista possíveis duplicatas
+  de digitação pra revisão humana em vez de mesclar sozinho), recuperação
+  de CPF com zero à esquerda perdido no Excel, dedup de paciente (CPF ou
+  nome parecido, incluindo uma checagem extra pra nome com meio-nome
+  abreviado tipo "F P" vs "Freire Pereira"), e inferência de status a
+  partir de quais datas estão preenchidas (quase todos os 179 casos têm só
+  "Data da cirurgia" preenchida → status `realizado`).
+- Os 3 casos de teste fabricados que já existiam (pacientes Polyane, Moara,
+  Maria Fernanda) foram apagados antes da conferência final — eles tinham
+  sido montados a partir de 3 linhas reais dessa mesma planilha, mas com
+  datas/financeiro/booleanos inventados por cima pra QA. Os PACIENTES foram
+  reaproveitados (mesmos IDs); só os casos fabricados foram substituídos
+  pelos dados reais dessas 3 pessoas vindos da planilha.
+- org_member **"Maurício Leite de Souza"** criado (`role: owner`, CRM
+  `null`) — é o `doctor_id` de todos os 179 casos importados.
+  ⚠️ **PENDENTE**: esse org_member está vinculado a um usuário Auth
+  **placeholder** (`mauricio.leite@sosmaorecife.axis.local`, sem convite
+  enviado) só pra satisfazer a FK obrigatória `org_members.user_id`. Ele
+  não consegue logar como ele mesmo ainda — falta pegar o e-mail real dele
+  e reenviar convite/reset de senha.
+  ⚠️ **PENDENTE**: CRM do Dr. Maurício não foi coletado, campo está `null`.
+- Os outros dois org_members que já existiam antes desta importação
+  continuam como estavam — **"Dr. Teste Axis"** (`owner`, CRM-0001) e
+  **"Admin"** (`owner`, sem CRM). Nenhum dos dois se chama "Paulo"; se
+  "Admin" deve ser renomeado pra representar o sócio/gestor administrativo,
+  isso ainda não foi feito — `doctor_id` dos 179 casos importados aponta
+  só pro org_member do Dr. Maurício, nunca pra esses dois.
+
+### Qualidade de dado pós-importação
+
+- Duplicatas de referência (hospital/convênio/fornecedor/procedimento)
+  foram **detectadas mas não mescladas automaticamente** — ficaram como
+  registros separados com nomes parecidos/typos (ex: "Arthromed" vs
+  "Arthomed", "Hopistal Português" vs "Hospital Português", "SOS Mãos" vs
+  "Sos Mão"). Lista completa no relatório de importação salvo.
+  ⚠️ **PENDENTE (decisão consciente, não bug)**: renomear manualmente na
+  tela de Cadastros NÃO resolve isso — só muda a aparência do nome, não
+  funde os IDs, então os casos continuam fragmentados entre os registros
+  duplicados nos rankings/relatórios. Mesclagem de verdade (reapontar casos
+  pro ID correto + apagar o duplicado vazio) exigiria uma ferramenta
+  dedicada que ainda **não existe**. Decisão consciente: aceitar dado
+  fragmentado por enquanto, sem bloquear a apresentação pro Dr. Maurício.
+- 2 CPFs da planilha eram irrecuperáveis (viraram notação científica no
+  Excel) — gravados como `null`, listados no relatório.
+- 11 casos tinham mais de um fornecedor na mesma célula da planilha (ex:
+  "TAG Medic/Orthoserv") — não é possível atribuir um único `supplier_id`
+  nesses casos; gravados sem fornecedor, texto original preservado em
+  `observacoes`.
+
 ## Deploy na VPS (acesso mínimo)
 
 - **Usuário de deploy**: `axis` (dono de `/opt/axis`, **apenas** no grupo
@@ -214,6 +273,16 @@ perder o fio de qual ferramenta corrigiu o quê.
 
 ## Próximo passo sugerido
 
-- Corrigir o bug do Combobox em `/casos/novo` (bloqueia o fluxo de criar caso).
 - Redirecionar o login para o painel (dashboard de relatórios) em vez de
   `/casos`, seguindo o combinado de "chamariz" do médico.
+- Notificação por e-mail de alerta: único item técnico pendente da lista
+  anterior, não bloqueante.
+
+## Estado geral (2026-08-20)
+
+Sistema em produção (`axis-clin.duckdns.org`) com os dados reais completos
+do Dr. Maurício (179 casos), pronto para apresentação/uso em período de
+teste por ele. Nenhum bug crítico conhecido em aberto. Curadoria manual
+dos casos menos ambíguos (correção de typos simples, sem ambiguidade real
+de fundir entidades) fica a cargo do parceiro de negócio antes de mostrar
+o sistema pro médico — ver pendência de duplicatas de referência acima.

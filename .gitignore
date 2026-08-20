@@ -9,6 +9,7 @@
 # Dados sensíveis / planilha real de pacientes (LGPD)
 Planilha*.xlsx
 ~$*
+backend/scripts/reports/*.txt
 
 # Artefatos
 node_modules
