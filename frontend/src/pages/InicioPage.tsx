@@ -161,10 +161,10 @@ export default function InicioPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-5 sm:grid-cols-2" aria-label="Rankings">
-        <RankingCard title="Melhores hospitais" data={summary.por_hospital} />
-        <RankingCard title="Melhores convênios" data={summary.por_convenio} />
-        <RankingCard title="Melhores fornecedores" data={summary.por_fornecedor} />
-        <RankingCard title="Melhores procedimentos" data={summary.por_procedimento} />
+        <RankingCard title="Hospitais" data={summary.por_hospital} />
+        <RankingCard title="Convênios" data={summary.por_convenio} />
+        <RankingCard title="Fornecedores" data={summary.por_fornecedor} />
+        <RankingCard title="Procedimentos" data={summary.por_procedimento} />
       </section>
     </div>
   );

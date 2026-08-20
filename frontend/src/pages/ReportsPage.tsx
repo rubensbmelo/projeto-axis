@@ -291,6 +291,7 @@ export default function ReportsPage() {
         </div>
         <div className="space-y-4">
           <CountTable title="Ranking por hospital" data={summary.por_hospital} />
+          <CountTable title="Ranking por fornecedor" data={summary.por_fornecedor} />
           <CountTable title="Ranking por procedimento" data={summary.por_procedimento} />
         </div>
       </div>

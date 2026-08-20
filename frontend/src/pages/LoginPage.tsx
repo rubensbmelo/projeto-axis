@@ -77,7 +77,7 @@ function LoginBackdrop() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-2xl border bg-card p-5"><p className="font-semibold">Central de alertas</p><div className="mt-5 h-20 rounded-xl bg-muted" /></div>
-            <div className="rounded-2xl border bg-card p-5"><p className="font-semibold">Melhores hospitais</p><div className="mt-5 grid gap-2"><div className="h-3 rounded bg-muted" /><div className="h-3 w-4/5 rounded bg-muted" /><div className="h-3 w-3/5 rounded bg-muted" /></div></div>
+            <div className="rounded-2xl border bg-card p-5"><p className="font-semibold">Hospitais</p><div className="mt-5 grid gap-2"><div className="h-3 rounded bg-muted" /><div className="h-3 w-4/5 rounded bg-muted" /><div className="h-3 w-3/5 rounded bg-muted" /></div></div>
           </div>
         </div>
       </div>
