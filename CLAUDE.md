@@ -228,12 +228,19 @@ perder o fio de qual ferramenta corrigiu o quê.
   não consegue logar como ele mesmo ainda — falta pegar o e-mail real dele
   e reenviar convite/reset de senha.
   ⚠️ **PENDENTE**: CRM do Dr. Maurício não foi coletado, campo está `null`.
-- Os outros dois org_members que já existiam antes desta importação
-  continuam como estavam — **"Dr. Teste Axis"** (`owner`, CRM-0001) e
-  **"Admin"** (`owner`, sem CRM). Nenhum dos dois se chama "Paulo"; se
-  "Admin" deve ser renomeado pra representar o sócio/gestor administrativo,
-  isso ainda não foi feito — `doctor_id` dos 179 casos importados aponta
-  só pro org_member do Dr. Maurício, nunca pra esses dois.
+- Limpeza dos org_members de teste (2026-08-20, depois da importação):
+  o org_member "Admin" foi renomeado pra **"Paulo"** (sócio/gestor
+  administrativo, `role: owner`, mantido) — é a conta usada pra logar
+  hoje. O org_member **"Dr. Teste Axis"** foi apagado (confirmado antes:
+  zero referências em `surgery_cases.doctor_id`, `surgery_cases.created_by`
+  e `case_documents.uploaded_by`; os 17 registros de `audit_log` ligados a
+  ele são histórico da conta Auth, não travam a exclusão porque
+  `audit_log.user_id` referencia `auth.users`, não `org_members`). Estado
+  final: só restam **"Paulo"** e **"Maurício Leite de Souza"**, ambos
+  `owner`.
+  ⚠️ **PENDENTE**: o e-mail Auth do Paulo também é placeholder/genérico
+  (`admin@axisteste.com.br`) — mesma situação do Dr. Maurício, precisa do
+  e-mail real dele pra virar login de verdade.
 
 ### Qualidade de dado pós-importação
 
